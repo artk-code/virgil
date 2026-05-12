@@ -1,0 +1,68 @@
+# ------------------------------------------------------------------------------
+# Local secrets — NEVER commit real credentials (GitHub will reject scans too).
+# Copy .env.example -> .env and keep .env untracked.
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local.env
+
+# PostgreSQL client / server leaked creds
+.pgpass
+*.pgdump
+postgres-data/
+**/pgdata/
+
+# TLS private material
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+!**/fixtures/*.pem
+
+# Generic secret drops
+secrets/
+**/credentials.json
+**/service-account*.json
+**/google-application-credentials.json
+.aws/credentials
+.azure/
+
+# Docker overrides often contain bind mounts + local env
+docker-compose.override.yml
+compose.override.yaml
+*.override.yml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# Language artifacts
+**/target/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+node_modules/
+
+# Go
+**/vendor/
+*.exe
+*.test
+*.out
+
+# Logs & temp
+*.log
+tmp/
+temp/

@@ -1,0 +1,115 @@
+# ------------------------------------------------------------------------------
+# Polyglot stack template — swap service names, images, and env as needed.
+#
+#   cp .env.example .env   # then edit passwords
+#   docker compose up --build
+#
+#   UI (static + /api proxy): http://localhost:13000
+#   Go API on host:           http://localhost:18080  (container listens on 8080)
+#   Postgres on host:         localhost:15432  (avoids clashing with a local Postgres on 5432)
+#   Redis on host:            localhost:16379  (avoids clashing with a local Redis on 6379)
+# ------------------------------------------------------------------------------
+
+name: polyglot-stack
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: polyglot-postgres
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env - see README}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [stack-net]
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: polyglot-redis
+    ports:
+      - "16379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [stack-net]
+
+  go-api:
+    build:
+      context: ./go-api
+    container_name: polyglot-go-api
+    ports:
+      - "18080:8080"
+    env_file: .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks: [stack-net]
+
+  python-worker:
+    build:
+      context: ./python-worker
+    container_name: polyglot-python-worker
+    env_file: .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [stack-net]
+
+  rust-worker:
+    build:
+      context: ./rust-worker
+    container_name: polyglot-rust-worker
+    env_file: .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [stack-net]
+
+  ts-ui:
+    build:
+      context: ./ts-ui
+    container_name: polyglot-ts-ui
+    ports:
+      - "13000:80"
+    depends_on:
+      go-api:
+        condition: service_started
+    networks: [stack-net]
+
+volumes:
+  postgres-data:
+
+networks:
+  stack-net:
+    driver: bridge

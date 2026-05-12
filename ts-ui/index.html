@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Polyglot stack template</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; max-width: 52rem; }
+    code { background: #f4f4f5; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>Polyglot stack template</h1>
+  <p>
+    Static shell served by nginx. API calls use <code>/api/…</code> so the browser never deals with CORS
+    (same reverse-proxy pattern as a typical SecMCP-style dashboard: browser only talks to one origin).
+  </p>
+  <ul>
+    <li><a href="/api/health">/api/health</a> — proxied to Go (<code>go-api:8080/health</code>)</li>
+  </ul>
+  <p>Edit <code>ts-ui/index.html</code> and rebuild <code>ts-ui</code> when you wire a real SPA.</p>
+</body>
+</html>
