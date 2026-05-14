@@ -3,22 +3,355 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Polyglot stack template</title>
+  <title>fsecai dashboard</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; max-width: 52rem; }
-    code { background: #f4f4f5; padding: 0.1rem 0.35rem; border-radius: 4px; }
-    a { color: #2563eb; }
+    :root {
+      --bg: #0b1020;
+      --card: #121a31;
+      --line: #2a3355;
+      --text: #e4e8f8;
+      --muted: #aab4d6;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --info: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 1.2rem;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0b1020 0%, #0e1426 100%);
+    }
+    h1 { margin: 0 0 0.4rem; font-size: 1.35rem; }
+    h2 { margin: 0 0 0.7rem; font-size: 1.05rem; }
+    .subtle { color: var(--muted); margin: 0; }
+    .layout {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.95rem;
+    }
+    .row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 0.16rem 0.52rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      border: 1px solid var(--line);
+    }
+    .ok { color: var(--ok); border-color: #1f6f40; }
+    .warn { color: var(--warn); border-color: #8c6215; }
+    .err { color: var(--err); border-color: #7f2937; }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.55rem;
+      margin: 0.6rem 0 0.75rem;
+    }
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.2rem;
+    }
+    input, select, button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #0d1530;
+      color: var(--text);
+      padding: 0.48rem 0.54rem;
+    }
+    button {
+      background: #1e3a8a;
+      border-color: #3152b6;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #2a4cb3; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 0.42rem 0.25rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .scroll-x { overflow-x: auto; }
+    .message { color: var(--muted); margin-top: 0.2rem; font-size: 0.86rem; }
+    .error { color: #fca5a5; }
+    code {
+      background: #0b132b;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.1rem 0.35rem;
+    }
   </style>
 </head>
 <body>
-  <h1>Polyglot stack template</h1>
-  <p>
-    Static shell served by nginx. API calls use <code>/api/…</code> so the browser never deals with CORS
-    (same reverse-proxy pattern as a typical SecMCP-style dashboard: browser only talks to one origin).
-  </p>
-  <ul>
-    <li><a href="/api/health">/api/health</a> — proxied to Go (<code>go-api:8080/health</code>)</li>
-  </ul>
-  <p>Edit <code>ts-ui/index.html</code> and rebuild <code>ts-ui</code> when you wire a real SPA.</p>
+  <header class="card">
+    <h1>fsecai operator dashboard</h1>
+    <p class="subtle">Single-origin UI through nginx proxy. API requests use <code>/api/*</code>.</p>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <div class="row" style="justify-content: space-between;">
+        <h2>Health</h2>
+        <button id="refresh-health" style="width:auto;">Refresh</button>
+      </div>
+      <div class="row">
+        <span id="health-status" class="status-pill warn">loading</span>
+        <span id="redis-status" class="status-pill warn">redis: n/a</span>
+        <span id="postgres-status" class="status-pill warn">postgres: n/a</span>
+      </div>
+      <p id="health-message" class="message">Fetching health...</p>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content: space-between;">
+        <h2>Recent alerts</h2>
+        <button id="refresh-alerts" style="width:auto;">Refresh</button>
+      </div>
+      <div class="controls">
+        <div>
+          <label for="alerts-limit">Limit</label>
+          <select id="alerts-limit">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div>
+          <label for="alerts-offset">Offset</label>
+          <input id="alerts-offset" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div id="alerts-message" class="message">Loading alerts...</div>
+      <div class="scroll-x">
+        <table>
+          <thead>
+            <tr>
+              <th>Analyzed At</th>
+              <th>Severity</th>
+              <th>Score</th>
+              <th>Host</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody id="alerts-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <section class="card" style="margin-top: 1rem;">
+    <div class="row" style="justify-content: space-between;">
+      <h2>Event search</h2>
+      <button id="run-search" style="width:auto;">Run search</button>
+    </div>
+    <div class="controls">
+      <div>
+        <label for="search-host-id">Host ID</label>
+        <input id="search-host-id" placeholder="local-dev-host" />
+      </div>
+      <div>
+        <label for="search-event-type">Event Type</label>
+        <input id="search-event-type" placeholder="process_exec" />
+      </div>
+      <div>
+        <label for="search-severity">Severity</label>
+        <select id="search-severity">
+          <option value="">(any)</option>
+          <option value="low">low</option>
+          <option value="medium">medium</option>
+          <option value="high">high</option>
+          <option value="critical">critical</option>
+        </select>
+      </div>
+      <div>
+        <label for="search-limit">Limit</label>
+        <select id="search-limit">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div>
+        <label for="search-offset">Offset</label>
+        <input id="search-offset" type="number" min="0" value="0" />
+      </div>
+    </div>
+    <div id="search-message" class="message">Run a search to load events.</div>
+    <div class="scroll-x">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Severity</th>
+            <th>Event Type</th>
+            <th>Host</th>
+            <th>Agent</th>
+            <th>Trace ID</th>
+          </tr>
+        </thead>
+        <tbody id="events-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    async function getJson(url) {
+      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { raw: text }; }
+      if (!res.ok) {
+        const message = data.message || data.error || ("HTTP " + res.status);
+        throw new Error(message);
+      }
+      return data;
+    }
+
+    function statusClass(value) {
+      if (value === "ok") return "ok";
+      if (value === "degraded") return "warn";
+      return "err";
+    }
+
+    function setPill(el, label, value) {
+      el.textContent = label + ": " + value;
+      el.className = "status-pill " + statusClass(value);
+    }
+
+    function renderRows(bodyEl, rows, cols, emptyMessage) {
+      bodyEl.innerHTML = "";
+      if (!rows || rows.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = cols;
+        td.className = "message";
+        td.textContent = emptyMessage;
+        tr.appendChild(td);
+        bodyEl.appendChild(tr);
+        return;
+      }
+      rows.forEach((cells) => {
+        const tr = document.createElement("tr");
+        cells.forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value ?? "";
+          tr.appendChild(td);
+        });
+        bodyEl.appendChild(tr);
+      });
+    }
+
+    async function loadHealth() {
+      const messageEl = document.getElementById("health-message");
+      messageEl.textContent = "Loading health...";
+      messageEl.className = "message";
+      try {
+        const data = await getJson("/api/health");
+        const health = document.getElementById("health-status");
+        health.textContent = "status: " + (data.status || "unknown");
+        health.className = "status-pill " + statusClass(data.status);
+        setPill(document.getElementById("redis-status"), "redis", data.redis || "unknown");
+        setPill(document.getElementById("postgres-status"), "postgres", data.postgres || "unknown");
+        messageEl.textContent = "Last updated: " + new Date().toLocaleTimeString();
+      } catch (err) {
+        messageEl.textContent = "Health error: " + err.message;
+        messageEl.className = "message error";
+      }
+    }
+
+    async function loadAlerts() {
+      const messageEl = document.getElementById("alerts-message");
+      messageEl.textContent = "Loading alerts...";
+      messageEl.className = "message";
+      const limit = document.getElementById("alerts-limit").value;
+      const offset = document.getElementById("alerts-offset").value || "0";
+      try {
+        const data = await getJson("/api/v1/alerts/recent?limit=" + encodeURIComponent(limit) + "&offset=" + encodeURIComponent(offset));
+        const rows = (data.alerts || []).map((a) => [
+          a.analyzed_at || "",
+          a.severity || "",
+          String(a.score ?? ""),
+          a.host_id || "",
+          a.explanation || "",
+        ]);
+        renderRows(document.getElementById("alerts-body"), rows, 5, "No alerts found.");
+        const p = data.pagination || {};
+        messageEl.textContent = "Returned " + (p.returned ?? rows.length) + " alerts (offset " + (p.offset ?? 0) + ", has_more=" + (p.has_more ?? false) + ")";
+      } catch (err) {
+        renderRows(document.getElementById("alerts-body"), [], 5, "No data.");
+        messageEl.textContent = "Alerts error: " + err.message;
+        messageEl.className = "message error";
+      }
+    }
+
+    async function runSearch() {
+      const messageEl = document.getElementById("search-message");
+      messageEl.textContent = "Searching events...";
+      messageEl.className = "message";
+      const params = new URLSearchParams();
+      const hostId = document.getElementById("search-host-id").value.trim();
+      const eventType = document.getElementById("search-event-type").value.trim();
+      const severity = document.getElementById("search-severity").value.trim();
+      const limit = document.getElementById("search-limit").value.trim();
+      const offset = document.getElementById("search-offset").value.trim() || "0";
+      if (hostId) params.set("host_id", hostId);
+      if (eventType) params.set("event_type", eventType);
+      if (severity) params.set("severity", severity);
+      params.set("limit", limit || "50");
+      params.set("offset", offset);
+
+      try {
+        const data = await getJson("/api/v1/events/search?" + params.toString());
+        const rows = (data.events || []).map((e) => [
+          e.ts || "",
+          e.severity || "",
+          e.event_type || "",
+          e.host_id || "",
+          e.agent_id || "",
+          e.trace_id || "",
+        ]);
+        renderRows(document.getElementById("events-body"), rows, 6, "No events found.");
+        const p = data.pagination || {};
+        messageEl.textContent = "Returned " + (p.returned ?? rows.length) + " events (offset " + (p.offset ?? 0) + ", has_more=" + (p.has_more ?? false) + ")";
+      } catch (err) {
+        renderRows(document.getElementById("events-body"), [], 6, "No data.");
+        messageEl.textContent = "Search error: " + err.message;
+        messageEl.className = "message error";
+      }
+    }
+
+    document.getElementById("refresh-health").addEventListener("click", loadHealth);
+    document.getElementById("refresh-alerts").addEventListener("click", loadAlerts);
+    document.getElementById("run-search").addEventListener("click", runSearch);
+    document.getElementById("alerts-limit").addEventListener("change", loadAlerts);
+    document.getElementById("alerts-offset").addEventListener("change", loadAlerts);
+
+    loadHealth();
+    loadAlerts();
+    runSearch();
+  </script>
 </body>
 </html>

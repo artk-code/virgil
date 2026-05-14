@@ -7,10 +7,30 @@
   - effect: upsert host + heartbeat row
 - `GET /api/v1/agents/{agent_id}/status`
   - returns latest heartbeat status for one agent
-- `GET /api/v1/alerts/recent?limit=20`
-  - returns newest rows from `security_findings`
-- `GET /api/v1/events/search?host_id=&event_type=&severity=&limit=50`
-  - returns filtered rows from `security_events`
+- `GET /api/v1/alerts/recent?limit=20&offset=0`
+  - returns newest rows from `security_findings` with deterministic order (`analyzed_at DESC, analysis_id DESC`)
+  - query guardrails: `limit` range `1..100`, `offset` range `0..10000`
+  - response includes `pagination` object: `limit`, `offset`, `returned`, `has_more`
+- `GET /api/v1/events/search?host_id=&event_type=&severity=&limit=50&offset=0`
+  - returns filtered rows from `security_events` with deterministic order (`ts DESC, event_id DESC`)
+  - query guardrails: `limit` range `1..250`, `offset` range `0..10000`
+  - `severity` must be one of: `low`, `medium`, `high`, `critical`
+  - response includes `pagination` object: `limit`, `offset`, `returned`, `has_more`
+
+## Error contract for query validation
+
+For invalid query parameters on the two query endpoints above, API returns:
+
+```json
+{
+  "error_code": "invalid_query",
+  "message": "human-readable validation message",
+  "details": {
+    "param": "severity",
+    "value": "urgent"
+  }
+}
+```
 
 ## SQL model (migration `001_init_security_schema.sql`)
 

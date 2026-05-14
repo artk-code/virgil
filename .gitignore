@@ -43,6 +43,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example
+.cursor/
 
 # Language artifacts
 **/target/

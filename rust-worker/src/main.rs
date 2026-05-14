@@ -124,6 +124,8 @@ fn now_rfc3339() -> String {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::Value;
+
     #[test]
     fn default_redis_url_is_valid() {
         let url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://redis:6379".into());
@@ -134,5 +136,18 @@ mod tests {
     fn timestamp_format_has_z_suffix() {
         let ts = super::now_rfc3339();
         assert!(ts.ends_with('Z'));
+    }
+
+    #[test]
+    fn synthetic_event_contains_expected_shape() {
+        let event = super::synthetic_event("host-1", "agent-1", "simulator", 10);
+        assert_eq!(event.host_id, "host-1");
+        assert_eq!(event.agent_id, "agent-1");
+        assert_eq!(event.source_type, "simulator");
+        assert_eq!(event.severity, "high");
+        assert!(event.event_id.len() > 10);
+        assert!(event.trace_id.len() > 10);
+        assert_eq!(event.tags.len(), 3);
+        assert_eq!(event.normalized["process_name"], Value::String("nc".to_string()));
     }
 }

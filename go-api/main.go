@@ -29,6 +29,19 @@ type healthResponse struct {
 	Postgres string `json:"postgres"`
 }
 
+type apiErrorResponse struct {
+	ErrorCode string         `json:"error_code"`
+	Message   string         `json:"message"`
+	Details   map[string]any `json:"details,omitempty"`
+}
+
+type paginationResponse struct {
+	Limit    int  `json:"limit"`
+	Offset   int  `json:"offset"`
+	Returned int  `json:"returned"`
+	HasMore  bool `json:"has_more"`
+}
+
 func main() {
 	srv := &server{
 		db:       openPostgres(),
@@ -254,14 +267,18 @@ func (s *server) handleAgentStatus(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleRecentAlerts(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method_not_allowed"})
+		writeAPIError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET is allowed", nil)
+		return
+	}
+	limit, offset, err := parseLimitOffset(r, 20, 100, 10000)
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid_query", err.Error(), nil)
 		return
 	}
 	if s.db == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "database_unavailable"})
 		return
 	}
-	limit := parseLimit(r, 20, 100)
 	ctx, cancel := context.WithTimeout(r.Context(), 4*time.Second)
 	defer cancel()
 
@@ -269,9 +286,10 @@ func (s *server) handleRecentAlerts(w http.ResponseWriter, r *http.Request) {
 		ctx,
 		`SELECT analysis_id, event_id, host_id, severity, score, explanation, analyzed_at
 		   FROM security_findings
-		  ORDER BY analyzed_at DESC
-		  LIMIT $1`,
-		limit,
+		  ORDER BY analyzed_at DESC, analysis_id DESC
+		  LIMIT $1 OFFSET $2`,
+		limit+1,
+		offset,
 	)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query_failed"})
@@ -279,7 +297,7 @@ func (s *server) handleRecentAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	results := make([]map[string]any, 0, limit)
+	results := make([]map[string]any, 0, limit+1)
 	for rows.Next() {
 		var analysisID, eventID, hostID, severity, explanation string
 		var score float64
@@ -298,22 +316,48 @@ func (s *server) handleRecentAlerts(w http.ResponseWriter, r *http.Request) {
 			"analyzed_at": analyzedAt.UTC().Format(time.RFC3339),
 		})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"alerts": results})
+	hasMore := len(results) > limit
+	if hasMore {
+		results = results[:limit]
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"alerts": results,
+		"pagination": paginationResponse{
+			Limit:    limit,
+			Offset:   offset,
+			Returned: len(results),
+			HasMore:  hasMore,
+		},
+	})
 }
 
 func (s *server) handleEventSearch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method_not_allowed"})
+		writeAPIError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET is allowed", nil)
+		return
+	}
+	limit, offset, err := parseLimitOffset(r, 50, 250, 10000)
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, "invalid_query", err.Error(), nil)
+		return
+	}
+	hostID := strings.TrimSpace(r.URL.Query().Get("host_id"))
+	eventType := strings.TrimSpace(r.URL.Query().Get("event_type"))
+	severity := strings.TrimSpace(r.URL.Query().Get("severity"))
+	if severity != "" && !isValidSeverity(severity) {
+		writeAPIError(
+			w,
+			http.StatusBadRequest,
+			"invalid_query",
+			"severity must be one of: low, medium, high, critical",
+			map[string]any{"param": "severity", "value": severity},
+		)
 		return
 	}
 	if s.db == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "database_unavailable"})
 		return
 	}
-	limit := parseLimit(r, 50, 250)
-	hostID := strings.TrimSpace(r.URL.Query().Get("host_id"))
-	eventType := strings.TrimSpace(r.URL.Query().Get("event_type"))
-	severity := strings.TrimSpace(r.URL.Query().Get("severity"))
 
 	var b bytes.Buffer
 	b.WriteString(`SELECT event_id, trace_id, host_id, agent_id, source_type, event_type, severity, ts, raw, normalized, tags
@@ -336,8 +380,8 @@ func (s *server) handleEventSearch(w http.ResponseWriter, r *http.Request) {
 		args = append(args, severity)
 		idx++
 	}
-	b.WriteString(fmt.Sprintf(" ORDER BY ts DESC LIMIT $%d", idx))
-	args = append(args, limit)
+	b.WriteString(fmt.Sprintf(" ORDER BY ts DESC, event_id DESC LIMIT $%d OFFSET $%d", idx, idx+1))
+	args = append(args, limit+1, offset)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -349,7 +393,7 @@ func (s *server) handleEventSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	results := make([]map[string]any, 0, limit)
+	results := make([]map[string]any, 0, limit+1)
 	for rows.Next() {
 		var eventID, traceID, rowHostID, agentID, sourceType, rowEventType, rowSeverity string
 		var ts time.Time
@@ -375,22 +419,55 @@ func (s *server) handleEventSearch(w http.ResponseWriter, r *http.Request) {
 			"tags":        decodeJSON(tags),
 		})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"events": results})
+	hasMore := len(results) > limit
+	if hasMore {
+		results = results[:limit]
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"events": results,
+		"pagination": paginationResponse{
+			Limit:    limit,
+			Offset:   offset,
+			Returned: len(results),
+			HasMore:  hasMore,
+		},
+	})
 }
 
-func parseLimit(r *http.Request, fallback, max int) int {
-	limitRaw := strings.TrimSpace(r.URL.Query().Get("limit"))
-	if limitRaw == "" {
-		return fallback
+func parseLimitOffset(r *http.Request, fallbackLimit, maxLimit, maxOffset int) (int, int, error) {
+	limit, err := parseBoundedInt(r.URL.Query().Get("limit"), fallbackLimit, 1, maxLimit, "limit")
+	if err != nil {
+		return 0, 0, err
 	}
-	n, err := strconv.Atoi(limitRaw)
-	if err != nil || n < 1 {
-		return fallback
+	offset, err := parseBoundedInt(r.URL.Query().Get("offset"), 0, 0, maxOffset, "offset")
+	if err != nil {
+		return 0, 0, err
 	}
-	if n > max {
-		return max
+	return limit, offset, nil
+}
+
+func parseBoundedInt(raw string, fallback, min, max int, name string) (int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return fallback, nil
 	}
-	return n
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be an integer between %d and %d", name, min, max)
+	}
+	if n < min || n > max {
+		return 0, fmt.Errorf("%s must be between %d and %d", name, min, max)
+	}
+	return n, nil
+}
+
+func isValidSeverity(v string) bool {
+	switch strings.ToLower(v) {
+	case "low", "medium", "high", "critical":
+		return true
+	default:
+		return false
+	}
 }
 
 func decodeJSON(raw []byte) any {
@@ -405,4 +482,12 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeAPIError(w http.ResponseWriter, status int, code, message string, details map[string]any) {
+	writeJSON(w, status, apiErrorResponse{
+		ErrorCode: code,
+		Message:   message,
+		Details:   details,
+	})
 }

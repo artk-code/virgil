@@ -12,11 +12,21 @@ monitoring. The Phase 1 implementation provides a practical pipeline:
 The design intentionally keeps Redis as a transport layer and Postgres as the
 authoritative long-term store.
 
+## Current status (May 2026)
+
+Implemented and validated in the current branch:
+
+- API query hardening for alerts/events (`limit`/`offset` validation, severity guardrails, pagination metadata, structured query errors).
+- Worker observability upgrades (structured lifecycle logs + periodic metrics counters).
+- DLQ replay tooling (`scripts/replay_dlq.py`) with dry-run default and bounded replay controls.
+- First dashboard slice in `ts-ui` (health, recent alerts, event search) using same-origin `/api/*` calls.
+
 ## Quick start
 
 ```bash
 cp .env.example .env
 # Edit POSTGRES_PASSWORD and DATABASE_URL so credentials match.
+make bootstrap
 docker compose up --build -d
 ```
 
@@ -68,20 +78,56 @@ py -3 scripts/verify_stack.py
 | **postgres** | Relational store; credentials from `.env` / compose interpolation. |
 | **redis** | Cache / pub-sub / streams placeholder; workers read `REDIS_URL`. |
 | **go-api** | HTTP edge: `/health` and `/ready` ping Redis and Postgres when configured. Extend with routes, auth, and domain logic in `go-api/`. |
-| **python-worker** | Rules/model analysis consumer for `security_events`; writes `security_analysis`/`security_alerts` and DLQ. |
+| **python-worker** | Rules/model analysis consumer for `security_events`; writes `security_analysis`/`security_alerts` and DLQ. Emits structured lifecycle logs (`event_id`, `stream_id`, `host_id`, `attempt`, `outcome`) and periodic metrics counters. |
 | **python-transformer** | Scheduled ETL job that moves Redis stream data to Postgres with checkpoints. |
 | **rust-worker** | Async simulator that publishes normalized security events to Redis streams. |
-| **ts-ui** | nginx serves static files and **proxies `/api/*` to `go-api:8080`** (see `ts-ui/nginx.conf`). Replace `index.html` or drop in a built SPA under the same nginx config. |
+| **ts-ui** | nginx serves static files and **proxies `/api/*` to `go-api:8080`** (see `ts-ui/nginx.conf`). Current dashboard includes health, recent alerts, and event search panels. |
 
 ## nginx `/api` proxy pattern
 
-The browser loads `http://localhost:13000`. Requests to `http://localhost:13000/api/health` are proxied to `http://go-api:8080/health` inside the Docker network. Rename the Compose service **and** the `proxy_pass` upstream in `ts-ui/nginx.conf` if you change `go-api`.
+The browser loads `http://localhost:13000`.
+
+- `http://localhost:13000/api/health` is proxied to `http://go-api:8080/health`.
+- `http://localhost:13000/api/v1/*` is proxied to `http://go-api:8080/api/v1/*`.
+
+Rename the Compose service **and** the `proxy_pass` upstreams in `ts-ui/nginx.conf` if you change `go-api`.
 
 ## Security pipeline docs (Phase 1)
 
 - Event contract and stream topology: `docs/security-event-contract.md`
 - Rust role split (host sensor vs simulator): `docs/rust-agent-deployment.md`
 - API + SQL model summary: `docs/api-data-model.md`
+- Next implementation checklist: `docs/next-build-plan.md`
+
+## DLQ replay utility
+
+Use the DLQ replay tool to safely requeue failed worker messages from `security_dlq`.
+
+Dry-run (default, no writes):
+
+```bash
+python3 scripts/replay_dlq.py --limit 50
+```
+
+Execute replay writes:
+
+```bash
+python3 scripts/replay_dlq.py --execute --limit 50
+```
+
+Execute + delete successfully replayed DLQ entries:
+
+```bash
+python3 scripts/replay_dlq.py --execute --delete-replayed --limit 50
+```
+
+Useful flags:
+
+- `--from-id <stream-id>`: resume from a specific DLQ stream ID.
+- `--target-stream <name>`: force destination stream for all replays.
+- `--fallback-stream <name>`: destination if DLQ entry source stream is missing/invalid.
+
+By default the tool reads `REDIS_URL`, `SECURITY_DLQ_STREAM`, and `SECURITY_EVENTS_STREAM` from environment.
 
 ## API endpoints (Phase 1)
 
@@ -89,8 +135,16 @@ The browser loads `http://localhost:13000`. Requests to `http://localhost:13000/
 - `GET /ready`
 - `POST /api/v1/agents/checkin`
 - `GET /api/v1/agents/{agent_id}/status`
-- `GET /api/v1/alerts/recent`
-- `GET /api/v1/events/search`
+- `GET /api/v1/alerts/recent?limit=20&offset=0`
+- `GET /api/v1/events/search?host_id=&event_type=&severity=&limit=50&offset=0`
+
+Query endpoint notes:
+
+- `alerts/recent`: `limit` must be `1..100`, `offset` must be `0..10000`.
+- `events/search`: `limit` must be `1..250`, `offset` must be `0..10000`.
+- `events/search` `severity` filter must be one of: `low`, `medium`, `high`, `critical`.
+- Both endpoints now return a `pagination` block with `limit`, `offset`, `returned`, and `has_more`.
+- Invalid query params return `400` with `{ "error_code": "invalid_query", "message": "...", "details": { ... } }`.
 
 ## Renaming services
 
@@ -133,10 +187,23 @@ For enterprise production workloads, use a dedicated secret manager with audit, 
 
 | Target | Purpose |
 |--------|---------|
+| `make bootstrap` | Ensure `.env` exists and verify local prerequisites (`docker`, `docker compose`, `make`). |
+| `make doctor` | Print local toolchain versions and whether `go` / `cargo` / `python3` / Docker are available. |
 | `make up` / `make down` | Start or stop the stack. |
 | `make logs` | Tail service logs. |
-| `make test` | Run Go, Rust, and Python tests on the **host** (requires toolchains). |
+| `make test` | Run Go, Rust, and Python tests on the **host**; missing toolchains are skipped with a notice. |
 | `make verify` | HTTP smoke test (uses `PYTHON`, default `python3`). |
+
+## Next build plan (current focus)
+
+Most initial Phase 2 milestones are now complete. Recommended next order:
+
+1. **Transformer safety (`ART-14`)**  
+   Add idempotency and checkpoint resume hardening tests in `python-worker/transform_job.py`.
+2. **CI baseline (`ART-15`)**  
+   Add workflow gates for `make doctor`, `make test`, and compose smoke verification.
+
+Detailed checklist and milestone state live in `docs/next-build-plan.md`.
 
 ## License
 

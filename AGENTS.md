@@ -22,12 +22,13 @@ Use this file when extending the template with an automated coding agent.
 From repo root:
 
 ```bash
-cd go-api && go test ./...
-cd ../rust-worker && cargo test
-cd ../python-worker && pip install -r requirements.txt -r requirements-dev.txt && pytest -q
+make doctor
+make test
 ```
 
 Python tests live in `python-worker/tests/`; `pytest.ini` sets `testpaths` and `pythonpath`.
+
+`make test` now degrades gracefully when a host toolchain is missing (prints `Skipping ...`), so agents should still run it by default and report skipped stacks explicitly.
 
 ## Smoke test after `docker compose up`
 
@@ -50,3 +51,44 @@ The script checks `http://localhost:18080/health` and `http://localhost:13000/ap
 - Do **not** commit `.env`.  
 - After renaming Compose services, update `ts-ui/nginx.conf` `proxy_pass`.  
 - Prefer `docker compose logs <service>` when debugging healthcheck failures.
+- Use `python3 scripts/replay_dlq.py` for safe DLQ requeue workflows (dry-run by default).
+
+## Current baseline snapshot (May 2026)
+
+- Compose stack boots healthy with `make up` and passes smoke checks with `make verify`.
+- Host tests exist for Go (`go-api/main_test.go`), Python (`python-worker/tests/`), and Rust (`rust-worker/src/main.rs`).
+- Bootstrap and environment prep are centralized in `make bootstrap` and `scripts/bootstrap.sh`.
+- The active execution checklist for next milestones lives in `docs/next-build-plan.md`.
+- Worker observability now emits structured JSON lifecycle logs and periodic metrics counters; avoid adding raw payload logging that could leak sensitive command content.
+- API query contracts, DLQ replay tooling, and the first dashboard slice are implemented and validated.
+
+## Next-build execution guidance for agents
+
+When asked to "continue building" without strict scope, prioritize in this order:
+
+1. **Transformer safety (`ART-14`) first**  
+   Harden checkpoint resume and idempotency behavior in `python-worker/transform_job.py`.
+2. **CI baseline (`ART-15`) second**  
+   Add workflow gates for `make doctor`, `make test`, and compose smoke verification.
+3. **Then remaining product increments**  
+   Any additional UI or API expansion should follow after backend correctness + CI gates are in place.
+
+## Linear workflow for agents
+
+- Use the Linear project `fsecai` for milestone tracking.
+- Before starting implementation, set the issue to `In Progress` and post a short plan comment.
+- After implementation, post a completion comment with:
+  - what changed
+  - validation commands/results
+  - any operator notes
+- Only move issue to `Done` after runtime verification passes (`make test`, `make verify`, and relevant endpoint/UI smoke checks).
+- Keep `docs/next-build-plan.md` in sync with Linear state when milestones are completed.
+
+Suggested "first command" sequence for new agent sessions:
+
+```bash
+make doctor
+make test
+docker compose up --build -d
+make verify
+```
