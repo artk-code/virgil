@@ -25,6 +25,7 @@ services:
       - "15432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -79,8 +80,44 @@ services:
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_URL: ${DATABASE_URL}
+      SECURITY_EVENTS_STREAM: ${SECURITY_EVENTS_STREAM:-security_events}
+      SECURITY_ANALYSIS_STREAM: ${SECURITY_ANALYSIS_STREAM:-security_analysis}
+      SECURITY_ALERTS_STREAM: ${SECURITY_ALERTS_STREAM:-security_alerts}
+      SECURITY_DLQ_STREAM: ${SECURITY_DLQ_STREAM:-security_dlq}
+      SECURITY_RULES_GROUP: ${SECURITY_RULES_GROUP:-py-rules-cg}
+      HOST_ID: ${HOST_ID:-local-dev-host}
+      PIPELINE_RETRY_MAX: ${PIPELINE_RETRY_MAX:-3}
+      PIPELINE_DEDUPE_TTL_SECONDS: ${PIPELINE_DEDUPE_TTL_SECONDS:-3600}
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks: [stack-net]
+
+  python-transformer:
+    build:
+      context: ./python-worker
+    container_name: polyglot-python-transformer
+    env_file: .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_URL: ${DATABASE_URL}
+      SECURITY_EVENTS_STREAM: ${SECURITY_EVENTS_STREAM:-security_events}
+      SECURITY_ANALYSIS_STREAM: ${SECURITY_ANALYSIS_STREAM:-security_analysis}
+      SECURITY_TRANSFORM_GROUP: ${SECURITY_TRANSFORM_GROUP:-transform-cg}
+      SECURITY_TRANSFORM_ANALYSIS_GROUP: ${SECURITY_TRANSFORM_ANALYSIS_GROUP:-transform-analysis-cg}
+      ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-60}
+      ETL_BATCH_SIZE: ${ETL_BATCH_SIZE:-200}
+      ETL_CONSUMER_NAME: ${ETL_CONSUMER_NAME:-transform-etl}
+      ETL_RUN_ONCE: ${ETL_RUN_ONCE:-false}
+      HOST_ID: ${HOST_ID:-local-dev-host}
+    command: ["python", "-u", "transform_job.py"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks: [stack-net]
 
@@ -91,6 +128,11 @@ services:
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SECURITY_EVENTS_STREAM: ${SECURITY_EVENTS_STREAM:-security_events}
+      SECURITY_HEARTBEAT_STREAM: ${SECURITY_HEARTBEAT_STREAM:-security_heartbeats}
+      HOST_ID: ${HOST_ID:-local-dev-host}
+      AGENT_ID: ${AGENT_ID:-agent-simulator}
+      SOURCE_TYPE: ${SOURCE_TYPE:-simulator}
     depends_on:
       redis:
         condition: service_healthy

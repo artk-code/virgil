@@ -11,6 +11,6 @@ RUN useradd --create-home --shell /usr/sbin/nologin app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY worker.py .
+COPY *.py .
 USER app
 CMD ["python", "-u", "worker.py"]

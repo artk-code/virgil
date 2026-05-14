@@ -1,8 +1,16 @@
-# Polyglot stack template
+# fsecai
 
-A **clone-and-go** Docker Compose stub for teams that ship **Go, Python, Rust, and a static/TS-facing web shell** together. It is intentionally small: one `docker compose up` gives you Postgres, Redis, a Go HTTP API, background workers, and nginx with an **`/api` reverse proxy** so the browser talks to a single origin (same idea as the SecMCP-style layout: static UI + proxied backend, no CORS gymnastics).
+`fsecai` is a polyglot security-agent platform starter for endpoint and server
+monitoring. The Phase 1 implementation provides a practical pipeline:
 
-This is **not** a framework. It is wiring you can rename, delete, or replace while keeping the same operational shape.
+- Rust producer simulates host telemetry and pushes normalized events to Redis streams.
+- Python worker applies heuristics/model scoring and emits analysis + alerts.
+- Python transformer periodically persists stream data to Postgres for long-term storage.
+- Go API exposes check-in/status and query endpoints over the SQL store.
+- nginx serves UI/static content and proxies `/api` to the Go API.
+
+The design intentionally keeps Redis as a transport layer and Postgres as the
+authoritative long-term store.
 
 ## Quick start
 
@@ -18,6 +26,21 @@ docker compose up --build -d
 - **Redis (host port → container 6379):** `localhost:16379`  
 
 Host ports **15432** and **16379** avoid collisions with other stacks (for example a local Redis already bound to 6379).
+
+## Architecture at a glance
+
+1. Rust host/simulator emits events to `security_events`.
+2. Python rules engine consumes `security_events`, scores data, emits:
+   - `security_analysis`
+   - `security_alerts`
+   - `security_dlq` on failures
+3. Python ETL job moves stream data into Postgres tables:
+   - `security_events`
+   - `security_findings`
+   - `hosts`
+   - `agent_heartbeats`
+   - `etl_checkpoints`
+4. Go API serves operational endpoints and historical query APIs backed by Postgres.
 
 ## Running next to SecMCP
 
@@ -45,13 +68,29 @@ py -3 scripts/verify_stack.py
 | **postgres** | Relational store; credentials from `.env` / compose interpolation. |
 | **redis** | Cache / pub-sub / streams placeholder; workers read `REDIS_URL`. |
 | **go-api** | HTTP edge: `/health` and `/ready` ping Redis and Postgres when configured. Extend with routes, auth, and domain logic in `go-api/`. |
-| **python-worker** | Long-running process template; extend in `python-worker/worker.py`. |
-| **rust-worker** | Async Redis ping loop; extend in `rust-worker/src/main.rs`. |
+| **python-worker** | Rules/model analysis consumer for `security_events`; writes `security_analysis`/`security_alerts` and DLQ. |
+| **python-transformer** | Scheduled ETL job that moves Redis stream data to Postgres with checkpoints. |
+| **rust-worker** | Async simulator that publishes normalized security events to Redis streams. |
 | **ts-ui** | nginx serves static files and **proxies `/api/*` to `go-api:8080`** (see `ts-ui/nginx.conf`). Replace `index.html` or drop in a built SPA under the same nginx config. |
 
 ## nginx `/api` proxy pattern
 
 The browser loads `http://localhost:13000`. Requests to `http://localhost:13000/api/health` are proxied to `http://go-api:8080/health` inside the Docker network. Rename the Compose service **and** the `proxy_pass` upstream in `ts-ui/nginx.conf` if you change `go-api`.
+
+## Security pipeline docs (Phase 1)
+
+- Event contract and stream topology: `docs/security-event-contract.md`
+- Rust role split (host sensor vs simulator): `docs/rust-agent-deployment.md`
+- API + SQL model summary: `docs/api-data-model.md`
+
+## API endpoints (Phase 1)
+
+- `GET /health`
+- `GET /ready`
+- `POST /api/v1/agents/checkin`
+- `GET /api/v1/agents/{agent_id}/status`
+- `GET /api/v1/alerts/recent`
+- `GET /api/v1/events/search`
 
 ## Renaming services
 
@@ -101,4 +140,4 @@ For enterprise production workloads, use a dedicated secret manager with audit, 
 
 ## License
 
-Template-only; assign your own license when you fork for a product.
+Set the license policy that fits your organization before distributing.
