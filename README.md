@@ -214,4 +214,4 @@ Detailed checklist and milestone state live in `docs/next-build-plan.md`.
 
 ## License
 
-Set the license policy that fits your organization before distributing.
+MIT License. See `LICENSE`.
