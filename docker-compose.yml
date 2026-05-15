@@ -1,28 +1,28 @@
 # ------------------------------------------------------------------------------
-# Polyglot stack template — swap service names, images, and env as needed.
+# VIRGIL local stack.
 #
 #   cp .env.example .env   # then edit passwords
 #   docker compose up --build
 #
-#   UI (static + /api proxy): http://localhost:13000
-#   Go API on host:           http://localhost:18080  (container listens on 8080)
-#   Postgres on host:         localhost:15432  (avoids clashing with a local Postgres on 5432)
-#   Redis on host:            localhost:16379  (avoids clashing with a local Redis on 6379)
+#   UI (static + /api proxy): http://localhost:3000
+#   Go API on host:           http://localhost:8080
+#   Postgres on host:         localhost:5432
+#   Redis on host:            localhost:6379
 # ------------------------------------------------------------------------------
 
-name: polyglot-stack
+name: virgil
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: polyglot-postgres
+    container_name: virgil-postgres
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env - see README}
       POSTGRES_DB: ${POSTGRES_DB:-app}
     ports:
-      - "15432:5432"
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
@@ -35,9 +35,9 @@ services:
 
   redis:
     image: redis:7.2-alpine
-    container_name: polyglot-redis
+    container_name: virgil-redis
     ports:
-      - "16379:6379"
+      - "6379:6379"
     command: >
       redis-server
       --appendonly yes
@@ -53,9 +53,9 @@ services:
   go-api:
     build:
       context: ./go-api
-    container_name: polyglot-go-api
+    container_name: virgil-go-api
     ports:
-      - "18080:8080"
+      - "8080:8080"
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -76,7 +76,7 @@ services:
   python-worker:
     build:
       context: ./python-worker
-    container_name: polyglot-python-worker
+    container_name: virgil-python-worker
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -99,7 +99,7 @@ services:
   python-transformer:
     build:
       context: ./python-worker
-    container_name: polyglot-python-transformer
+    container_name: virgil-python-transformer
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -124,7 +124,7 @@ services:
   rust-worker:
     build:
       context: ./rust-worker
-    container_name: polyglot-rust-worker
+    container_name: virgil-rust-worker
     env_file: .env
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -141,9 +141,9 @@ services:
   ts-ui:
     build:
       context: ./ts-ui
-    container_name: polyglot-ts-ui
+    container_name: virgil-ts-ui
     ports:
-      - "13000:80"
+      - "3000:80"
     depends_on:
       go-api:
         condition: service_started

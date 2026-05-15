@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
-$api = 'http://localhost:18080/health'
-$ui = 'http://localhost:13000/api/health'
+$api = 'http://localhost:8080/health'
+$ui = 'http://localhost:3000/api/health'
 
 function Test-Url([string]$name, [string]$url) {
   Write-Host "GET $url"

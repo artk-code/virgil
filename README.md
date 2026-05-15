@@ -17,9 +17,9 @@ authoritative long-term store.
 
 ## Current status (May 2026)
 
-Phase 0 branding has started: this repository is being evolved from the
-`fsecai` starter into **VIRGIL**. Runtime service names and some module paths may
-still use legacy `polyglot-*` identifiers until the stack is renamed safely.
+Phase 0 branding has started: this repository is being evolved into **VIRGIL**.
+Runtime service names now use the `virgil-*` identity while the implementation
+stays intentionally small and runnable.
 
 Implemented and validated in the current branch:
 
@@ -37,12 +37,13 @@ make bootstrap
 docker compose up --build -d
 ```
 
-- **UI (nginx + static):** http://localhost:13000  
-- **Go API (direct):** http://localhost:18080/health  
-- **Postgres (host port → container 5432):** `localhost:15432`  
-- **Redis (host port → container 6379):** `localhost:16379`  
+- **UI (nginx + static):** http://localhost:3000
+- **Go API (direct):** http://localhost:8080/health
+- **Postgres:** `localhost:5432`
+- **Redis:** `localhost:6379`
 
-Host ports **15432** and **16379** avoid collisions with other stacks (for example a local Redis already bound to 6379).
+If these common development ports are occupied, adjust the host bindings in
+`docker-compose.yml`.
 
 ## Architecture at a glance
 
@@ -58,17 +59,6 @@ Host ports **15432** and **16379** avoid collisions with other stacks (for examp
    - `agent_heartbeats`
    - `etl_checkpoints`
 4. Go API serves operational endpoints and historical query APIs backed by Postgres.
-
-## Running next to SecMCP
-
-Default host bindings are chosen so this template can run alongside SecMCP’s Compose stack (which uses **3000**, **8080**, and **6379** on the host; SecMCP does not expose Postgres).
-
-| Purpose | This template (host) | SecMCP (host) |
-|--------|----------------------|---------------|
-| Web UI | **13000** | **3000** |
-| HTTP API | **18080** | **8080** |
-| Postgres | **15432** | — |
-| Redis | **16379** | **6379** |
 
 After the stack is healthy:
 
@@ -92,10 +82,10 @@ py -3 scripts/verify_stack.py
 
 ## nginx `/api` proxy pattern
 
-The browser loads `http://localhost:13000`.
+The browser loads `http://localhost:3000`.
 
-- `http://localhost:13000/api/health` is proxied to `http://go-api:8080/health`.
-- `http://localhost:13000/api/v1/*` is proxied to `http://go-api:8080/api/v1/*`.
+- `http://localhost:3000/api/health` is proxied to `http://go-api:8080/health`.
+- `http://localhost:3000/api/v1/*` is proxied to `http://go-api:8080/api/v1/*`.
 
 Rename the Compose service **and** the `proxy_pass` upstreams in `ts-ui/nginx.conf` if you change `go-api`.
 
@@ -188,7 +178,10 @@ Besides `.env`, the repo ignores common leak paths: TLS private keys, `secrets/`
 
 ### Production secret management (recommended vendor)
 
-For enterprise production workloads, use a dedicated secret manager with audit, rotation, and fine-grained access—**HashiCorp Vault** is a common choice. This template **does not** integrate Vault; inject runtime secrets via your platform (Kubernetes secrets + external secrets operator, ECS task secrets, etc.) or your CI/CD vault integration instead of flat files in the image.
+For enterprise production workloads, use a dedicated secret manager with audit,
+rotation, and fine-grained access. VIRGIL does not integrate a secret manager
+yet; inject runtime secrets via your platform or CI/CD secret store instead of
+flat files in the image.
 
 ## Makefile targets
 

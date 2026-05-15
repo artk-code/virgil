@@ -1,5 +1,5 @@
 PYTHON ?= python3
-# Default compose host ports: UI 13000, Go API 18080, Postgres 15432, Redis 16379 (no overlap with SecMCP 3000/8080/6379).
+# Default compose host ports: UI 3000, Go API 8080, Postgres 5432, Redis 6379.
 
 .PHONY: bootstrap doctor up down logs test verify
 

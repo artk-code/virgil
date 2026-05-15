@@ -18,8 +18,8 @@ def get(url: str, timeout: float = 15.0) -> tuple[int, bytes]:
 
 def main() -> int:
     checks = (
-        ("go-api", "http://localhost:18080/health"),
-        ("ts-ui /api proxy", "http://localhost:13000/api/health"),
+        ("go-api", "http://localhost:8080/health"),
+        ("ts-ui /api proxy", "http://localhost:3000/api/health"),
     )
     for name, url in checks:
         print(f"GET {url}")

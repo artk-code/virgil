@@ -1,4 +1,4 @@
-module polyglot-stack-template/go-api
+module github.com/artk-code/virgil/go-api
 
 go 1.22
 

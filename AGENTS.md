@@ -45,7 +45,7 @@ py -3 scripts/verify_stack.py
 
 If your `py` launcher already defaults to Python 3, `make verify PYTHON=py` may work; otherwise use the command above.
 
-The script checks `http://localhost:18080/health` and `http://localhost:13000/api/health` and expects Redis and Postgres status `ok` in the JSON body.
+The script checks `http://localhost:8080/health` and `http://localhost:3000/api/health` and expects Redis and Postgres status `ok` in the JSON body.
 
 ## Operational hints
 
@@ -56,8 +56,8 @@ The script checks `http://localhost:18080/health` and `http://localhost:13000/ap
 
 ## Current baseline snapshot (May 2026)
 
-- Phase 0 branding is moving this repository from the original `fsecai` starter
-  toward **VIRGIL**. Avoid broad runtime renames unless that is the explicit task.
+- Phase 0 branding is moving this repository toward **VIRGIL**. Avoid broad
+  runtime renames unless that is the explicit task.
 - Compose stack boots healthy with `make up` and passes smoke checks with `make verify`.
 - Host tests exist for Go (`go-api/main_test.go`), Python (`python-worker/tests/`), and Rust (`rust-worker/src/main.rs`).
 - Bootstrap and environment prep are centralized in `make bootstrap` and `scripts/bootstrap.sh`.
@@ -78,8 +78,7 @@ When asked to "continue building" without strict scope, prioritize in this order
 
 ## Linear workflow for agents
 
-- Use the Linear project `fsecai` for milestone tracking until it is renamed to
-  VIRGIL.
+- Use the VIRGIL project for milestone tracking.
 - Before starting implementation, set the issue to `In Progress` and post a short plan comment.
 - After implementation, post a completion comment with:
   - what changed
