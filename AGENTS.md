@@ -1,7 +1,7 @@
 # Agent instructions (VIRGIL)
 
-Use this file when extending **VIRGIL** (Vendor-neutral Incident Response Graph
-& Intelligence Layer) with an automated coding agent.
+Use this file when extending **VIRGIL** (Vendor Independent Response Governance
+Intelligence Layer) with an automated coding agent.
 
 ## Where business logic lives
 

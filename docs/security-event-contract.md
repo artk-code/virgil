@@ -1,7 +1,7 @@
 # VIRGIL Security Event Contract
 
 This contract defines the Redis stream topology and JSON payloads used by
-**VIRGIL** (Vendor-neutral Incident Response Graph & Intelligence Layer).
+**VIRGIL** (Vendor Independent Response Governance Intelligence Layer).
 
 ## Redis streams
 

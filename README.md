@@ -1,6 +1,6 @@
 # VIRGIL
 
-**VIRGIL** is the **Vendor-neutral Incident Response Graph & Intelligence
+**VIRGIL** is the **Vendor Independent Response Governance Intelligence
 Layer**: a polyglot, open endpoint-security platform starter for agent
 telemetry, modular detection, investigation, and response.
 
