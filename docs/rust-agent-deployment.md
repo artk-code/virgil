@@ -1,11 +1,11 @@
-# Rust Agent Deployment Boundary
+# VIRGIL Agent Deployment Boundary
 
-Phase 1 splits Rust responsibilities into two roles so eBPF can run safely on
-Linux hosts while the compose stack remains unprivileged.
+VIRGIL splits Rust responsibilities into two roles so host-level collectors can
+run safely on endpoints while the Compose stack remains unprivileged.
 
-## 1) Host security sensor (`rust-host-agent`, planned)
+## 1) Endpoint security sensor (`rust-host-agent`, planned)
 
-- Deployment target: Linux host (systemd service) or Kubernetes DaemonSet.
+- Initial deployment target: Linux host (systemd service) or Kubernetes DaemonSet.
 - Privileges: host-level capabilities needed for eBPF attach/collect.
 - Data sources:
   - Primary: eBPF hooks and kernel telemetry.

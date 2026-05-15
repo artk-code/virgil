@@ -1,7 +1,7 @@
-# Security Event Contract (Phase 1)
+# VIRGIL Security Event Contract
 
-This contract defines the Redis stream topology and JSON payloads used by the
-security agent pipeline.
+This contract defines the Redis stream topology and JSON payloads used by
+**VIRGIL** (Vendor-neutral Incident Response Graph & Intelligence Layer).
 
 ## Redis streams
 

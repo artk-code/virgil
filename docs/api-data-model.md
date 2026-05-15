@@ -1,4 +1,9 @@
-# Phase 1 API + Data Model
+# VIRGIL API + Data Model
+
+This document tracks the current API and SQL baseline for **VIRGIL**
+(Vendor-neutral Incident Response Graph & Intelligence Layer). The model still
+reflects the initial Phase 1 scaffold and will expand toward fleet inventory,
+agent identity, alert workflow, and detection intelligence.
 
 ## Go API endpoints
 

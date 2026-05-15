@@ -1,6 +1,7 @@
-# Agent instructions (polyglot-stack-template)
+# Agent instructions (VIRGIL)
 
-Use this file when extending the template with an automated coding agent.
+Use this file when extending **VIRGIL** (Vendor-neutral Incident Response Graph
+& Intelligence Layer) with an automated coding agent.
 
 ## Where business logic lives
 
@@ -55,6 +56,8 @@ The script checks `http://localhost:18080/health` and `http://localhost:13000/ap
 
 ## Current baseline snapshot (May 2026)
 
+- Phase 0 branding is moving this repository from the original `fsecai` starter
+  toward **VIRGIL**. Avoid broad runtime renames unless that is the explicit task.
 - Compose stack boots healthy with `make up` and passes smoke checks with `make verify`.
 - Host tests exist for Go (`go-api/main_test.go`), Python (`python-worker/tests/`), and Rust (`rust-worker/src/main.rs`).
 - Bootstrap and environment prep are centralized in `make bootstrap` and `scripts/bootstrap.sh`.
@@ -75,7 +78,8 @@ When asked to "continue building" without strict scope, prioritize in this order
 
 ## Linear workflow for agents
 
-- Use the Linear project `fsecai` for milestone tracking.
+- Use the Linear project `fsecai` for milestone tracking until it is renamed to
+  VIRGIL.
 - Before starting implementation, set the issue to `In Progress` and post a short plan comment.
 - After implementation, post a completion comment with:
   - what changed

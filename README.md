@@ -1,7 +1,10 @@
-# fsecai
+# VIRGIL
 
-`fsecai` is a polyglot security-agent platform starter for endpoint and server
-monitoring. The Phase 1 implementation provides a practical pipeline:
+**VIRGIL** is the **Vendor-neutral Incident Response Graph & Intelligence
+Layer**: a polyglot, open endpoint-security platform starter for agent
+telemetry, modular detection, investigation, and response.
+
+The current Phase 0/Phase 1 baseline provides a practical pipeline:
 
 - Rust producer simulates host telemetry and pushes normalized events to Redis streams.
 - Python worker applies heuristics/model scoring and emits analysis + alerts.
@@ -13,6 +16,10 @@ The design intentionally keeps Redis as a transport layer and Postgres as the
 authoritative long-term store.
 
 ## Current status (May 2026)
+
+Phase 0 branding has started: this repository is being evolved from the
+`fsecai` starter into **VIRGIL**. Runtime service names and some module paths may
+still use legacy `polyglot-*` identifiers until the stack is renamed safely.
 
 Implemented and validated in the current branch:
 
@@ -76,7 +83,7 @@ py -3 scripts/verify_stack.py
 | Service | Role |
 |--------|------|
 | **postgres** | Relational store; credentials from `.env` / compose interpolation. |
-| **redis** | Cache / pub-sub / streams placeholder; workers read `REDIS_URL`. |
+| **redis** | Cache / pub-sub / streams transport; workers read `REDIS_URL`. |
 | **go-api** | HTTP edge: `/health` and `/ready` ping Redis and Postgres when configured. Extend with routes, auth, and domain logic in `go-api/`. |
 | **python-worker** | Rules/model analysis consumer for `security_events`; writes `security_analysis`/`security_alerts` and DLQ. Emits structured lifecycle logs (`event_id`, `stream_id`, `host_id`, `attempt`, `outcome`) and periodic metrics counters. |
 | **python-transformer** | Scheduled ETL job that moves Redis stream data to Postgres with checkpoints. |
@@ -92,7 +99,7 @@ The browser loads `http://localhost:13000`.
 
 Rename the Compose service **and** the `proxy_pass` upstreams in `ts-ui/nginx.conf` if you change `go-api`.
 
-## Security pipeline docs (Phase 1)
+## Security pipeline docs
 
 - Event contract and stream topology: `docs/security-event-contract.md`
 - Rust role split (host sensor vs simulator): `docs/rust-agent-deployment.md`
@@ -129,7 +136,7 @@ Useful flags:
 
 By default the tool reads `REDIS_URL`, `SECURITY_DLQ_STREAM`, and `SECURITY_EVENTS_STREAM` from environment.
 
-## API endpoints (Phase 1)
+## API endpoints
 
 - `GET /health`
 - `GET /ready`
