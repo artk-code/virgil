@@ -1,0 +1,55 @@
+### VIRGIL-PHI1 Training Config
+### Base: microsoft/phi-4 (or your preferred Phi-4 reasoning checkpoint)
+
+### Model
+model_name_or_path: microsoft/phi-4
+trust_remote_code: true
+flash_attn: auto
+
+### Method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+use_rslora: true
+
+### Dataset
+dataset: virgil_phi1_train
+template: phi
+cutoff_len: 4096
+max_samples: null
+overwrite_cache: true
+preprocessing_num_workers: 16
+
+### Output
+output_dir: ./saves/VIRGIL-PHI1
+logging_steps: 10
+save_steps: 200
+plot_loss: true
+overwrite_output_dir: true
+
+### Training
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-5
+num_train_epochs: 2.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+bf16: true
+packing: true
+gradient_checkpointing: true
+
+### Evaluation (Critical for iteration)
+eval_dataset: virgil_phi1_eval
+per_device_eval_batch_size: 4
+eval_strategy: steps
+eval_steps: 200
+load_best_model_at_end: true
+metric_for_best_model: eval_loss
+
+### Logging
+report_to: wandb
+run_name: virgil-phi1-v0.1

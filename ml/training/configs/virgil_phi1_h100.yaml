@@ -1,0 +1,60 @@
+# VIRGIL-PHI1 Training Config - H100 80GB (Default / Production)
+# Use this on RunPod or other cloud H100/A100 instances
+
+model_name_or_path: microsoft/phi-4
+trust_remote_code: true
+flash_attn: auto
+
+# LoRA Configuration - Optimized for reasoning on 14B model
+finetuning_type: lora
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+lora_rank: 32
+lora_alpha: 32
+lora_dropout: 0.0
+use_rslora: true
+
+# Dataset
+dataset_path: data/virgil_phi1_train.jsonl
+template: phi
+cutoff_len: 8192
+max_samples: null
+packing: true
+preprocessing_num_workers: 16
+
+# Output
+output_dir: outputs/VIRGIL-PHI1
+run_name: virgil-phi1-v1
+
+# Training - H100 Optimized
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 1.5e-5
+num_train_epochs: 2.0
+lr_scheduler_type: cosine
+warmup_steps: 50
+optim: adamw_8bit
+weight_decay: 0.01
+bf16: true
+gradient_checkpointing: true
+
+# Evaluation
+eval_dataset: data/virgil_phi1_eval.jsonl
+per_device_eval_batch_size: 4
+eval_strategy: steps
+eval_steps: 300
+load_best_model_at_end: true
+metric_for_best_model: eval_loss
+
+# Logging
+report_to: wandb
+logging_steps: 10
+save_strategy: steps
+save_steps: 300
+save_total_limit: 3

@@ -1,0 +1,97 @@
+{
+  "version": "v0.2",
+  "train": {
+    "count": 13731,
+    "tokens": 5859230,
+    "by_task": {
+      "procedure_to_technique": 6559,
+      "sigma_to_technique": 2733,
+      "event_to_technique": 2149,
+      "technique_explanation": 628,
+      "technique_to_detection": 628,
+      "mitigation_recommend": 526,
+      "sysmon_rationale": 466,
+      "windows_internals_qa": 4,
+      "macos_persistence": 4,
+      "android_evasion": 3,
+      "etw_telemetry": 2,
+      "windows_privesc_reasoning": 2,
+      "function_purpose_id": 2,
+      "macos_evasion": 2,
+      "fuzzing_to_detection": 2,
+      "dex_reasoning": 2,
+      "manifest_reasoning": 2,
+      "binary_triage": 2,
+      "exploit_chain_precursors": 2,
+      "attacker_decision_tree": 1,
+      "re_workflow": 1,
+      "red_team_anticipation": 1,
+      "patch_diff_reasoning": 1,
+      "vulnerability_class_reasoning": 1,
+      "phishing_pretext": 1,
+      "token_acl_reasoning": 1,
+      "opsec_tradeoff": 1,
+      "malware_attribution": 1,
+      "disasm_reasoning": 1,
+      "macos_malware_behavior": 1,
+      "apk_triage": 1,
+      "cve_to_telemetry": 1
+    },
+    "by_book": {
+      "(v0.1_corpus)": 13689,
+      "windows_security_internals": 9,
+      "android_malware_handbook": 8,
+      "ghidra_book": 7,
+      "art_of_mac_malware": 7,
+      "day_zero_to_zero_day": 7,
+      "red_team_engineering": 4
+    },
+    "by_synthesis": {
+      "templated_v0.1": 13689,
+      "hand_authored_v0.2": 42
+    }
+  },
+  "eval": {
+    "count": 1974,
+    "tokens": 859305,
+    "by_task": {
+      "procedure_to_technique": 792,
+      "sigma_to_technique": 526,
+      "event_to_technique": 402,
+      "technique_to_detection": 69,
+      "technique_explanation": 69,
+      "mitigation_recommend": 60,
+      "sysmon_rationale": 46,
+      "red_team_anticipation": 2,
+      "opsec_tradeoff": 1,
+      "vulnerability_class_reasoning": 1,
+      "apk_triage": 1,
+      "kernel_object_security": 1,
+      "infra_pivot_reasoning": 1,
+      "etw_telemetry": 1,
+      "dylib_xpc_abuse": 1,
+      "re_workflow": 1
+    },
+    "by_book": {
+      "(v0.1_corpus)": 1964,
+      "red_team_engineering": 4,
+      "art_of_mac_malware": 2,
+      "day_zero_to_zero_day": 1,
+      "android_malware_handbook": 1,
+      "windows_security_internals": 1,
+      "ghidra_book": 1
+    },
+    "by_synthesis": {
+      "templated_v0.1": 1964,
+      "hand_authored_v0.2": 10
+    }
+  },
+  "training_cost_estimate": {
+    "epochs": 3,
+    "tokens_total": 17577690,
+    "hours_a100_80gb": 0.7,
+    "cost_a100_80gb_usd": 1.95,
+    "hours_h100_sxm_estimated": 0.42,
+    "cost_h100_sxm_usd": 1.67
+  }
+}

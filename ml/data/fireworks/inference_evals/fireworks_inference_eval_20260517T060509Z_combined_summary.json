@@ -1,0 +1,71 @@
+{
+  "judge_pairs_path": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T060509Z_combined_judge_pairs.jsonl",
+  "case_count": 10,
+  "candidates_by_case": {
+    "1": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "2": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "3": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "4": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "5": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "6": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "7": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "8": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "9": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ],
+    "10": [
+      "qwen2-7b-1ep",
+      "qwen2-7b-5ep",
+      "qwen3-30b-1ep",
+      "qwen3-30b-5ep"
+    ]
+  },
+  "source_result_paths": [
+    "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T055905Z.jsonl",
+    "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T060247Z.jsonl",
+    "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T060509Z.jsonl"
+  ]
+}

@@ -1,0 +1,59 @@
+# VIRGIL-PHI1 Training Config - Mac 24GB (Testing Only)
+# Use with: python scripts/train_virgil_phi1.py --config configs/virgil_phi1_mac.yaml --force-mac
+
+model_name_or_path: microsoft/phi-4
+trust_remote_code: true
+
+# LoRA Configuration - Conservative for 24GB unified memory
+finetuning_type: lora
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+lora_rank: 16
+lora_alpha: 16
+lora_dropout: 0.05
+use_rslora: true
+
+# Dataset
+dataset_path: data/virgil_phi1_train.jsonl
+template: phi
+cutoff_len: 4096
+max_samples: null
+packing: true
+preprocessing_num_workers: 4
+
+# Output
+output_dir: outputs/VIRGIL-PHI1-mac-test
+run_name: virgil-phi1-mac-test
+
+# Training - Mac 24GB Optimized (very conservative)
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 1.0e-5
+num_train_epochs: 1.0
+lr_scheduler_type: cosine
+warmup_steps: 20
+optim: adamw_8bit
+weight_decay: 0.01
+bf16: false
+gradient_checkpointing: true
+
+# Evaluation
+eval_dataset: data/virgil_phi1_eval.jsonl
+per_device_eval_batch_size: 2
+eval_strategy: steps
+eval_steps: 100
+load_best_model_at_end: true
+metric_for_best_model: eval_loss
+
+# Logging
+report_to: wandb
+logging_steps: 5
+save_strategy: steps
+save_steps: 100
+save_total_limit: 2

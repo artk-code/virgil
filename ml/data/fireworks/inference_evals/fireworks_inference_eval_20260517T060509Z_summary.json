@@ -1,0 +1,57 @@
+{
+  "created_at": "20260517T060509Z",
+  "eval_file": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/virgil_fireworks_eval.jsonl",
+  "eval_file_sha256": "e0d463547c29e78289e38c89b36a3759d49cba31c88d88f2de21f0a3d4c680fc",
+  "case_count": 10,
+  "case_ids": [
+    "virgil_fireworks_eval.jsonl:23:30da2b075a2f8e2f",
+    "virgil_fireworks_eval.jsonl:38:a515ec8c71a6399c",
+    "virgil_fireworks_eval.jsonl:39:fdaf3878148e3985",
+    "virgil_fireworks_eval.jsonl:47:8a9f729dd9b07cd6",
+    "virgil_fireworks_eval.jsonl:54:014b84ee8fb1dc92",
+    "virgil_fireworks_eval.jsonl:67:1387895a7f0718b8",
+    "virgil_fireworks_eval.jsonl:70:f6ae20b2aaba45b0",
+    "virgil_fireworks_eval.jsonl:85:38d0bc8d5d82adbb",
+    "virgil_fireworks_eval.jsonl:91:b029c048bed38ba2",
+    "virgil_fireworks_eval.jsonl:99:0988ab4ddbc06a7b"
+  ],
+  "max_tokens": 2200,
+  "temperature": 0.0,
+  "deployments": {
+    "qwen2-7b-1ep": {
+      "name": "accounts/artk011235/deployments/s5pu7puq",
+      "state": "READY",
+      "status": {
+        "code": "OK",
+        "message": ""
+      },
+      "baseModel": "accounts/artk011235/models/virgil-qwen2-7b-sft-1ep-v1",
+      "deploymentShape": "",
+      "replicaCount": 1,
+      "desiredReplicaCount": 1,
+      "updateTime": "2026-05-17T06:04:52.043865Z"
+    }
+  },
+  "summary": {
+    "qwen2-7b-1ep": {
+      "cases": 10,
+      "errors": 0,
+      "valid_reasoning_tags": 10,
+      "valid_answer_tags": 9,
+      "valid_answer_json": 8,
+      "avg_latency_seconds": 7.367,
+      "max_latency_seconds": 23.118,
+      "prompt_tokens": 2173,
+      "completion_tokens": 6760,
+      "total_tokens": 8933,
+      "finish_reasons": {
+        "stop": 9,
+        "length": 1
+      }
+    }
+  },
+  "results_path": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T060509Z.jsonl",
+  "delete_after": {
+    "qwen2-7b-1ep": {}
+  }
+}

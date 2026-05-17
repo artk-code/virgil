@@ -1,0 +1,85 @@
+{
+  "created_at": "20260517T062121Z",
+  "eval_file": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/virgil_fireworks_eval.jsonl",
+  "eval_file_sha256": "e0d463547c29e78289e38c89b36a3759d49cba31c88d88f2de21f0a3d4c680fc",
+  "case_count": 10,
+  "case_ids": [
+    "virgil_fireworks_eval.jsonl:23:30da2b075a2f8e2f",
+    "virgil_fireworks_eval.jsonl:38:a515ec8c71a6399c",
+    "virgil_fireworks_eval.jsonl:39:fdaf3878148e3985",
+    "virgil_fireworks_eval.jsonl:47:8a9f729dd9b07cd6",
+    "virgil_fireworks_eval.jsonl:54:014b84ee8fb1dc92",
+    "virgil_fireworks_eval.jsonl:67:1387895a7f0718b8",
+    "virgil_fireworks_eval.jsonl:70:f6ae20b2aaba45b0",
+    "virgil_fireworks_eval.jsonl:85:38d0bc8d5d82adbb",
+    "virgil_fireworks_eval.jsonl:91:b029c048bed38ba2",
+    "virgil_fireworks_eval.jsonl:99:0988ab4ddbc06a7b"
+  ],
+  "max_tokens": 2200,
+  "temperature": 0.0,
+  "deployments": {
+    "base-qwen2-7b": {
+      "name": "accounts/artk011235/deployments/base-qwen2-7b-eval-20260517",
+      "state": "READY",
+      "status": {
+        "code": "OK",
+        "message": ""
+      },
+      "baseModel": "accounts/fireworks/models/qwen2-7b-instruct",
+      "deploymentShape": "",
+      "replicaCount": 1,
+      "desiredReplicaCount": 1,
+      "updateTime": "2026-05-17T06:17:54.216238Z"
+    },
+    "base-qwen3-30b-a3b": {
+      "name": "accounts/artk011235/deployments/base-qwen3-30b-a3b-eval-20260517",
+      "state": "READY",
+      "status": {
+        "code": "OK",
+        "message": ""
+      },
+      "baseModel": "accounts/fireworks/models/qwen3-30b-a3b-instruct-2507",
+      "deploymentShape": "accounts/fireworks/deploymentShapes/qwen3-30b-a3b-minimal/versions/cu7lfs2u",
+      "replicaCount": 1,
+      "desiredReplicaCount": 1,
+      "updateTime": "2026-05-17T06:20:56.232782Z"
+    }
+  },
+  "summary": {
+    "base-qwen2-7b": {
+      "cases": 10,
+      "errors": 0,
+      "valid_reasoning_tags": 10,
+      "valid_answer_tags": 2,
+      "valid_answer_json": 0,
+      "avg_latency_seconds": 7.975,
+      "max_latency_seconds": 10.789,
+      "prompt_tokens": 2173,
+      "completion_tokens": 7218,
+      "total_tokens": 9391,
+      "finish_reasons": {
+        "stop": 10
+      }
+    },
+    "base-qwen3-30b-a3b": {
+      "cases": 10,
+      "errors": 0,
+      "valid_reasoning_tags": 10,
+      "valid_answer_tags": 10,
+      "valid_answer_json": 2,
+      "avg_latency_seconds": 6.416,
+      "max_latency_seconds": 9.733,
+      "prompt_tokens": 2173,
+      "completion_tokens": 13457,
+      "total_tokens": 15630,
+      "finish_reasons": {
+        "stop": 10
+      }
+    }
+  },
+  "results_path": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T062121Z.jsonl",
+  "delete_after": {
+    "base-qwen2-7b": {},
+    "base-qwen3-30b-a3b": {}
+  }
+}

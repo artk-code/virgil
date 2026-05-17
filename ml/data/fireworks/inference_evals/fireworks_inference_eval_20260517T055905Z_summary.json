@@ -1,0 +1,63 @@
+{
+  "created_at": "20260517T055905Z",
+  "eval_file": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/virgil_fireworks_eval.jsonl",
+  "case_count": 10,
+  "max_tokens": 2200,
+  "temperature": 0.0,
+  "deployments": {
+    "qwen3-30b-1ep": {
+      "name": "accounts/artk011235/deployments/wvsnb8il",
+      "state": "READY",
+      "status": {
+        "code": "OK",
+        "message": ""
+      },
+      "baseModel": "accounts/artk011235/models/virgil-qwen3-30b-a3b-lora-sft-1ep-v1",
+      "deploymentShape": "accounts/fireworks/deploymentShapes/qwen3-30b-a3b-minimal/versions/cu7lfs2u",
+      "replicaCount": 1,
+      "desiredReplicaCount": 1,
+      "updateTime": "2026-05-17T05:56:03.936254Z"
+    },
+    "qwen3-30b-5ep": {
+      "name": "accounts/artk011235/deployments/ktb8hsy1",
+      "state": "READY",
+      "status": {
+        "code": "OK",
+        "message": ""
+      },
+      "baseModel": "accounts/artk011235/models/virgil-qwen3-30b-a3b-lora-sft-5ep-v1",
+      "deploymentShape": "accounts/fireworks/deploymentShapes/qwen3-30b-a3b-minimal/versions/cu7lfs2u",
+      "replicaCount": 1,
+      "desiredReplicaCount": 1,
+      "updateTime": "2026-05-17T05:57:40.240864Z"
+    }
+  },
+  "summary": {
+    "qwen3-30b-1ep": {
+      "cases": 10,
+      "errors": 0,
+      "valid_reasoning_tags": 9,
+      "valid_answer_tags": 9,
+      "valid_answer_json": 9,
+      "avg_latency_seconds": 5.549,
+      "max_latency_seconds": 14.442,
+      "prompt_tokens": 2173,
+      "completion_tokens": 8071,
+      "total_tokens": 10244
+    },
+    "qwen3-30b-5ep": {
+      "cases": 10,
+      "errors": 0,
+      "valid_reasoning_tags": 10,
+      "valid_answer_tags": 10,
+      "valid_answer_json": 10,
+      "avg_latency_seconds": 3.84,
+      "max_latency_seconds": 5.538,
+      "prompt_tokens": 2173,
+      "completion_tokens": 5306,
+      "total_tokens": 7479
+    }
+  },
+  "results_path": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T055905Z.jsonl",
+  "judge_pairs_path": "/home/parallels/virgil-training-data-files/virgil-ml/data/fireworks/inference_evals/fireworks_inference_eval_20260517T055905Z_judge_pairs.jsonl"
+}

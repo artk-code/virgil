@@ -1,0 +1,99 @@
+{
+  "created_at": "2026-05-17T06:40:00Z",
+  "judge": "frontier-model-human-style-review",
+  "eval_case_set": {
+    "eval_file": "data/fireworks/virgil_fireworks_eval.jsonl",
+    "eval_file_sha256": "e0d463547c29e78289e38c89b36a3759d49cba31c88d88f2de21f0a3d4c680fc",
+    "case_ids": [
+      "virgil_fireworks_eval.jsonl:23:30da2b075a2f8e2f",
+      "virgil_fireworks_eval.jsonl:38:a515ec8c71a6399c",
+      "virgil_fireworks_eval.jsonl:39:fdaf3878148e3985",
+      "virgil_fireworks_eval.jsonl:47:8a9f729dd9b07cd6",
+      "virgil_fireworks_eval.jsonl:54:014b84ee8fb1dc92",
+      "virgil_fireworks_eval.jsonl:67:1387895a7f0718b8",
+      "virgil_fireworks_eval.jsonl:70:f6ae20b2aaba45b0",
+      "virgil_fireworks_eval.jsonl:85:38d0bc8d5d82adbb",
+      "virgil_fireworks_eval.jsonl:91:b029c048bed38ba2",
+      "virgil_fireworks_eval.jsonl:99:0988ab4ddbc06a7b"
+    ],
+    "temperature": 0.0,
+    "max_tokens": 2200
+  },
+  "structural_summary": {
+    "base-qwen2-7b": {
+      "valid_answer_json": "0/10",
+      "valid_answer_tags": "2/10",
+      "avg_latency_seconds": 7.975,
+      "total_tokens": 9391
+    },
+    "base-qwen3-30b-a3b": {
+      "valid_answer_json": "2/10",
+      "valid_answer_tags": "10/10",
+      "avg_latency_seconds": 6.416,
+      "total_tokens": 15630
+    },
+    "qwen2-7b-1ep": {
+      "valid_answer_json": "8/10",
+      "valid_answer_tags": "9/10",
+      "avg_latency_seconds": 7.367,
+      "total_tokens": 8933
+    },
+    "qwen2-7b-5ep": {
+      "valid_answer_json": "10/10",
+      "valid_answer_tags": "10/10",
+      "avg_latency_seconds": 6.2,
+      "total_tokens": 7774
+    },
+    "qwen3-30b-1ep": {
+      "valid_answer_json": "9/10",
+      "valid_answer_tags": "9/10",
+      "avg_latency_seconds": 5.549,
+      "total_tokens": 10244
+    },
+    "qwen3-30b-5ep": {
+      "valid_answer_json": "10/10",
+      "valid_answer_tags": "10/10",
+      "avg_latency_seconds": 3.84,
+      "total_tokens": 7479
+    }
+  },
+  "human_judge_scores": {
+    "base-qwen2-7b": {
+      "average_score": 4.74,
+      "case_scores": [3.8, 4.5, 4.3, 6.5, 3.5, 4.2, 5.5, 5.8, 4.0, 5.3],
+      "summary": "Often understands the rough security story, but does not obey the VIRGIL answer contract. It misses closing answer tags in most cases and never emits valid JSON."
+    },
+    "base-qwen3-30b-a3b": {
+      "average_score": 6.85,
+      "case_scores": [6.5, 5.5, 6.3, 8.0, 8.0, 6.4, 8.2, 7.5, 7.2, 6.9],
+      "summary": "Technically much stronger than base 7B and often gives useful analysis, but still fails the structured JSON answer contract on 8 of 10 cases."
+    },
+    "qwen2-7b-1ep": {
+      "average_score": 6.0,
+      "case_scores": [4.5, 6.5, 7.2, 6.8, 1.5, 7.2, 7.5, 7.0, 4.0, 7.8],
+      "summary": "The fine-tune already improves structure over base Qwen2, but one epoch is not enough for dependable output."
+    },
+    "qwen2-7b-5ep": {
+      "average_score": 7.53,
+      "case_scores": [8.0, 8.5, 7.8, 8.0, 8.2, 8.7, 8.8, 8.0, 3.5, 5.8],
+      "summary": "Strong value result. The 5-epoch fine-tune transforms Qwen2 7B from contract-breaking baseline into a useful, structured SOC analyst."
+    },
+    "qwen3-30b-1ep": {
+      "average_score": 7.48,
+      "case_scores": [8.5, 7.3, 1.0, 8.7, 8.4, 8.0, 8.3, 8.4, 7.5, 8.7],
+      "summary": "High ceiling and strong technical analysis, but one severe repetition/truncation failure makes it risky."
+    },
+    "qwen3-30b-5ep": {
+      "average_score": 8.89,
+      "case_scores": [9.2, 8.8, 9.0, 9.4, 9.2, 9.0, 9.1, 9.3, 9.0, 6.9],
+      "summary": "Best overall model: strongest reasoning, best structure, lowest output token count, and fastest average latency in this small eval."
+    }
+  },
+  "deepseek_8b_status": {
+    "fine_tuned_deployment": "Failed internally before inference.",
+    "base_deployment_minimal_shape": "Failed internally before inference.",
+    "base_deployment_h100_shape": "Failed internally before inference.",
+    "conclusion": "No reliable 8B base-vs-fine-tuned inference comparison was possible on Fireworks during this run."
+  },
+  "bottom_line": "The 2M-token fine-tune delivered the largest measurable gain in structured answer reliability. Base Qwen3 30B was already knowledgeable, but the fine-tuned Qwen3 30B 5ep converted that knowledge into the exact VIRGIL reasoning/JSON behavior we need."
+}
