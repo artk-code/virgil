@@ -1,209 +1,389 @@
 # VIRGIL
 
-**VIRGIL** is the **Vendor Independent Response Governance Intelligence
-Layer**: a polyglot, open endpoint-security platform starter for agent
-telemetry, modular detection, investigation, and response.
+**Vendor Independent Response Governance Intelligence Layer**
 
-The current Phase 0/Phase 1 baseline provides a practical pipeline:
+VIRGIL is an open endpoint-security platform starter and ML training workspace
+for detection, investigation, and response. It pairs a runnable polyglot
+security pipeline with a growing synthetic training corpus for **VIRGIL
+Advisor**, a security-reasoning assistant designed to help analysts map
+telemetry to behavior, explain evidence, and recommend response actions.
 
-- Rust producer simulates host telemetry and pushes normalized events to Redis streams.
-- Python worker applies heuristics/model scoring and emits analysis + alerts.
-- Python transformer periodically persists stream data to Postgres for long-term storage.
-- Go API exposes check-in/status and query endpoints over the SQL store.
-- nginx serves UI/static content and proxies `/api` to the Go API.
+The current repository is intentionally practical: it boots locally with Docker
+Compose, exposes real query APIs, includes a small operator dashboard, and ships
+model-training assets that can be used immediately for SFT experiments.
 
-The design intentionally keeps Redis as a transport layer and Postgres as the
-authoritative long-term store.
+## Why VIRGIL
 
-## Current status (May 2026)
+Most security projects split the runtime and the model work into separate
+worlds. VIRGIL keeps them close:
 
-Phase 0 branding has started: this repository is being evolved into **VIRGIL**.
-Runtime service names now use the `virgil-*` identity while the implementation
-stays intentionally small and runnable.
+- A concrete endpoint telemetry pipeline you can run, test, and extend.
+- A clean Postgres-backed data model for events, findings, hosts, and agent
+  heartbeats.
+- Redis Streams for transport, retry, and DLQ workflows.
+- A dedicated ML package with **~2.13M tokens** of original synthetic security
+  reasoning data for training and evaluating VIRGIL Advisor.
+- Training scripts and configs for local Mac testing and RunPod/H100 QLoRA
+  fine-tuning.
 
-Implemented and validated in the current branch:
+## Project Goals
 
-- API query hardening for alerts/events (`limit`/`offset` validation, severity guardrails, pagination metadata, structured query errors).
-- Worker observability upgrades (structured lifecycle logs + periodic metrics counters).
-- DLQ replay tooling (`scripts/replay_dlq.py`) with dry-run default and bounded replay controls.
-- First dashboard slice in `ts-ui` (health, recent alerts, event search) using same-origin `/api/*` calls.
+VIRGIL is being built toward four practical goals:
 
-## Quick start
+- **Runnable security infrastructure:** keep the stack easy to boot, inspect,
+  test, and extend on a local machine.
+- **Vendor-independent response logic:** model events, detections, findings,
+  and response workflows without binding the core design to one EDR, SIEM, or
+  LLM provider.
+- **Training-grade security data:** maintain a clean, useful corpus for people
+  who want to train small and medium models on endpoint investigation,
+  detection engineering, and structured security reasoning.
+- **Human-centered automation:** use agents and models to accelerate triage and
+  evidence review while preserving explicit contracts, logs, and operator
+  approval boundaries.
+
+## Current State
+
+VIRGIL is in a Phase 0/Phase 1 baseline as of May 2026. The repo is small on
+purpose, but the core path is real: events flow through Redis, get scored by a
+Python worker, land in Postgres, and are visible through Go APIs and the static
+dashboard.
+
+| Area | Implemented now | Next focus |
+|---|---|---|
+| Runtime pipeline | Rust event simulator, Redis Streams, Python rules worker, Postgres ETL, Go API, nginx UI | Harden transformer checkpoint resume and idempotency |
+| Operations | `make doctor`, `make test`, `make verify`, Docker Compose, DLQ replay utility | Add CI gates for doctor, tests, and compose smoke verification |
+| API | Health/readiness, agent check-in/status, recent alerts, event search, query validation and pagination metadata | Expand alert workflow, fleet inventory, and detection intelligence |
+| UI | Health, recent alerts, and event search panels using same-origin `/api/*` | Build operator workflows around triage, event detail, and findings |
+| ML | 2,008 synthetic records, ~2.13M synthetic tokens, train/eval snapshots, Unsloth configs | Grow toward the 10M-token VIRGIL-PHI1 target and integrate model inference |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  sensor["rust-worker<br/>host telemetry simulator"] -->|XADD security_events| redis[("Redis Streams")]
+
+  redis -->|consumer group| rules["python-worker<br/>rules, scoring, alerts"]
+  rules -->|security_analysis| redis
+  rules -->|security_alerts| redis
+  rules -->|security_dlq| redis
+
+  redis -->|checkpointed reads| etl["python-transformer<br/>stream to SQL ETL"]
+  etl --> postgres[("Postgres<br/>events, findings, hosts")]
+
+  postgres --> api["go-api<br/>health, ready, query APIs"]
+  redis -. health .-> api
+  api --> nginx["nginx<br/>/api proxy"]
+  nginx --> ui["ts-ui<br/>operator dashboard"]
+```
+
+VIRGIL keeps Redis as the transport layer and Postgres as the authoritative
+long-term store. The Python worker performs the current runtime analysis using
+heuristics and scoring; the ML package is the training track that will become
+the Advisor model layer.
+
+## What Is In This Repo
+
+| Path | Purpose |
+|---|---|
+| `go-api/` | HTTP edge for health, readiness, agent status, recent alerts, and event search. |
+| `python-worker/` | Rules worker, scoring helpers, Redis ingestion, DLQ publishing, and transformer ETL job. |
+| `rust-worker/` | Async Tokio simulator that publishes normalized security events to Redis Streams. |
+| `rust-host-agent/` | Early host-agent package boundary for future native collection work. |
+| `ts-ui/` | Static operator dashboard served by nginx with `/api/*` proxying to the Go API. |
+| `db/migrations/` | Postgres schema for hosts, events, findings, heartbeats, and ETL checkpoints. |
+| `scripts/` | Bootstrap, stack verification, and safe DLQ replay tooling. |
+| `docs/` | API/data model notes, event contract, deployment notes, and next-build plan. |
+| `ml/` | VIRGIL Advisor synthetic corpus, dataset docs, Fireworks export/eval tooling, and training scripts. |
+
+## Quick Start
 
 ```bash
-cp .env.example .env
-# Edit POSTGRES_PASSWORD and DATABASE_URL so credentials match.
+# Creates .env from .env.example if needed and injects a one-time 256-bit
+# local Postgres password. Existing .env files are left unchanged.
 make bootstrap
 docker compose up --build -d
+make verify
 ```
 
-- **UI (nginx + static):** http://localhost:3000
-- **Go API (direct):** http://localhost:8080/health
-- **Postgres:** `localhost:5432`
-- **Redis:** `localhost:6379`
+Local URLs:
 
-If these common development ports are occupied, adjust the host bindings in
+| Service | URL |
+|---|---|
+| Operator dashboard | `http://localhost:3000` |
+| Go API health | `http://localhost:8080/health` |
+| UI proxied API health | `http://localhost:3000/api/health` |
+| Postgres | `localhost:5432` |
+| Redis | `localhost:6379` |
+
+If the default ports are occupied, adjust the host bindings in
 `docker-compose.yml`.
 
-## Architecture at a glance
-
-1. Rust host/simulator emits events to `security_events`.
-2. Python rules engine consumes `security_events`, scores data, emits:
-   - `security_analysis`
-   - `security_alerts`
-   - `security_dlq` on failures
-3. Python ETL job moves stream data into Postgres tables:
-   - `security_events`
-   - `security_findings`
-   - `hosts`
-   - `agent_heartbeats`
-   - `etl_checkpoints`
-4. Go API serves operational endpoints and historical query APIs backed by Postgres.
-
-After the stack is healthy:
+## Developer Commands
 
 ```bash
-make verify
-# Windows without `python3` on PATH:
-py -3 scripts/verify_stack.py
+make doctor   # Show local toolchain and Docker availability
+make test     # Run Go, Rust, and Python tests; missing toolchains are skipped
+make up       # Build and start the full stack
+make down     # Stop the stack, preserving named volumes
+make logs     # Tail service logs
+make verify   # Smoke-test API and UI proxy health after the stack is up
 ```
 
-## What each service does
+The current host test suite covers Go API behavior, Rust event-shape helpers,
+and Python worker/observability/DLQ basics.
 
-| Service | Role |
-|--------|------|
-| **postgres** | Relational store; credentials from `.env` / compose interpolation. |
-| **redis** | Cache / pub-sub / streams transport; workers read `REDIS_URL`. |
-| **go-api** | HTTP edge: `/health` and `/ready` ping Redis and Postgres when configured. Extend with routes, auth, and domain logic in `go-api/`. |
-| **python-worker** | Rules/model analysis consumer for `security_events`; writes `security_analysis`/`security_alerts` and DLQ. Emits structured lifecycle logs (`event_id`, `stream_id`, `host_id`, `attempt`, `outcome`) and periodic metrics counters. |
-| **python-transformer** | Scheduled ETL job that moves Redis stream data to Postgres with checkpoints. |
-| **rust-worker** | Async simulator that publishes normalized security events to Redis streams. |
-| **ts-ui** | nginx serves static files and **proxies `/api/*` to `go-api:8080`** (see `ts-ui/nginx.conf`). Current dashboard includes health, recent alerts, and event search panels. |
+## API Surface
 
-## nginx `/api` proxy pattern
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Health check for Redis and Postgres. |
+| `GET /ready` | Readiness check using the same dependency probes. |
+| `POST /api/v1/agents/checkin` | Upsert host and latest agent heartbeat. |
+| `GET /api/v1/agents/{agent_id}/status` | Return the latest status for one agent. |
+| `GET /api/v1/alerts/recent?limit=20&offset=0` | Read recent findings with pagination metadata. |
+| `GET /api/v1/events/search?host_id=&event_type=&severity=&limit=50&offset=0` | Search persisted events with validated filters. |
 
-The browser loads `http://localhost:3000`.
+Query guardrails:
 
-- `http://localhost:3000/api/health` is proxied to `http://go-api:8080/health`.
-- `http://localhost:3000/api/v1/*` is proxied to `http://go-api:8080/api/v1/*`.
+- `alerts/recent`: `limit` must be `1..100`; `offset` must be `0..10000`.
+- `events/search`: `limit` must be `1..250`; `offset` must be `0..10000`.
+- `events/search` severity must be one of `low`, `medium`, `high`, or
+  `critical`.
+- Invalid query params return `400` with `error_code`, `message`, and optional
+  `details`.
 
-Rename the Compose service **and** the `proxy_pass` upstreams in `ts-ui/nginx.conf` if you change `go-api`.
+## Data Flow
 
-## Security pipeline docs
+```mermaid
+sequenceDiagram
+  autonumber
+  participant R as rust-worker
+  participant S as Redis Streams
+  participant W as python-worker
+  participant T as python-transformer
+  participant P as Postgres
+  participant A as go-api
+  participant U as ts-ui
 
-- Event contract and stream topology: `docs/security-event-contract.md`
-- Rust role split (host sensor vs simulator): `docs/rust-agent-deployment.md`
-- API + SQL model summary: `docs/api-data-model.md`
-- Next implementation checklist: `docs/next-build-plan.md`
+  R->>S: Publish normalized event
+  W->>S: Read security_events
+  W->>W: Normalize, redact, dedupe, score
+  W->>S: Publish analysis and alerts
+  W-->>S: Publish DLQ entry on terminal failure
+  T->>S: Read streams from checkpoints
+  T->>P: Upsert events and findings
+  U->>A: Request /api/v1/alerts/recent
+  A->>P: Query findings
+  A-->>U: Return JSON + pagination
+```
 
-## DLQ replay utility
+The worker redacts obvious sensitive command content before logging or
+publishing derived analysis. Avoid adding raw payload logging unless the data is
+explicitly safe.
 
-Use the DLQ replay tool to safely requeue failed worker messages from `security_dlq`.
+## VIRGIL Advisor ML
 
-Dry-run (default, no writes):
+The `ml/` package is the model-training side of the project. It is built around
+OpenAI-compatible `messages` JSONL and explicit structured-answer contracts so
+fine-tuned models can be evaluated and eventually wired into the runtime
+pipeline.
+
+A companion write-up on the training run is available on Arthur Kaiser's blog:
+[One Night, Two Million Tokens, and a Custom Cybersecurity Model](https://www.artkaiser.net/blog/custom-cybersecurity-models-fireworks).
+
+VIRGIL Advisor examples teach the model to:
+
+- Map observed activity to MITRE ATT&CK techniques.
+- Explain why telemetry is suspicious or benign.
+- Read Sigma-style detection logic and identify covered behavior.
+- Recommend telemetry, containment, and investigation next steps.
+- Perform multi-hypothesis reasoning over endpoint and SOC timelines.
+- Preserve a structured answer that downstream code can parse.
+
+### Corpus Snapshot
+
+| Metric | Current value |
+|---|---:|
+| Synthesis registry version | `0.3-synthesis` |
+| Synthetic source records | 2,008 |
+| Synthetic source token estimate | 2,129,858 |
+| Synthesis domain files | 13 |
+| Current Fireworks SFT export | 1,900 train / 100 eval examples |
+| Current deterministic baseline snapshot | 13,689 train / 1,964 eval examples |
+| Archived v0.2 train/eval snapshot | 13,731 / 1,974 examples |
+
+The headline 2M-token corpus is tracked in `ml/synthesis_registry.json` and
+lives under `ml/data/synthesis/`. The Fireworks/OpenAI-compatible export lives
+under `ml/data/fireworks/`. The checked-in `ml/data/final/` and
+`ml/training/data/` files are deterministic baseline snapshots used by the
+current Unsloth configs unless you update `dataset_path` to point at a newer
+synthetic export.
+
+The current Fireworks manifest exports 2,000 source records into a 1,900/100
+train/eval split. The registry includes an additional small
+`web_framework_security` file that can be included the next time the export is
+refreshed.
+
+The ML tree intentionally excludes PDFs, parser chunks, and raw extracted book
+text. The checked-in corpus is original synthetic training material.
+
+The dataset is useful beyond this repo. It can serve as:
+
+- SFT data for a cybersecurity assistant that must answer in a structured
+  contract.
+- Evaluation fixtures for ATT&CK mapping, SOC reasoning, and telemetry
+  recommendation.
+- Seed material for distilling larger teacher-model behavior into smaller
+  local or hosted models.
+- A reference format for building defensive security datasets without shipping
+  copyrighted source text or raw sensitive telemetry.
+
+### Record Contract
+
+Each training example is a chat record with system, user, and assistant
+messages. Source records keep provenance in a top-level `meta` object; Fireworks
+exports strip that metadata from each row and preserve split/source details in
+`ml/data/fireworks/manifest.json`. Assistant responses use a two-part contract:
+
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are VIRGIL-Advisor..."},
+    {"role": "user", "content": "Investigate this endpoint scenario..."},
+    {
+      "role": "assistant",
+      "content": "<reasoning>Evidence-based analysis...</reasoning>\n<answer>{\"severity\":\"high\"}</answer>"
+    }
+  ],
+  "meta": {
+    "task": "hypothesis_testing",
+    "split": "train",
+    "synthesized": true
+  }
+}
+```
+
+The `<reasoning>` section teaches investigation discipline. The `<answer>`
+section is structured JSON intended for automated parsing and evaluation.
+
+### ML Training Loop
+
+```mermaid
+flowchart TB
+  concepts["Security concepts<br/>ATT&CK, Sigma, SOC, endpoint internals"] --> synth["LLM synthesis batches<br/>VIRGIL-format examples"]
+  synth --> registry["synthesis_registry.json<br/>counts, domains, token estimates"]
+  synth --> source["ml/data/synthesis/*.jsonl<br/>domain files"]
+  source --> prep["export/prepare scripts<br/>split, validate, package"]
+  prep --> train["train/eval JSONL<br/>Fireworks or Unsloth"]
+  train --> unsloth["Unsloth QLoRA<br/>Mac test or RunPod H100"]
+  unsloth --> adapter["VIRGIL-PHI1 adapter<br/>security reasoning model"]
+  adapter --> eval["Fireworks/inference evals<br/>format and answer checks"]
+  eval --> synth
+```
+
+### Training Quick Start
+
+Inspect the corpus:
 
 ```bash
+cd ml
+cat synthesis_registry.json
+```
+
+Export the synthetic corpus to Fireworks/OpenAI-compatible SFT files:
+
+```bash
+cd ml
+python scripts/export_fireworks_sft.py \
+  --input-dir data/synthesis \
+  --output-dir data/fireworks \
+  --eval-ratio 0.05
+
+python scripts/validate_fireworks_sft.py \
+  data/fireworks/virgil_fireworks_train.jsonl \
+  data/fireworks/virgil_fireworks_eval.jsonl
+```
+
+Run Unsloth training against the checked-in training snapshot:
+
+```bash
+# Production-style cloud run
+cd ml/training
+python scripts/train_virgil_phi1.py --config configs/virgil_phi1_h100.yaml
+
+# Local 24GB Mac test run
+python scripts/train_virgil_phi1.py --config configs/virgil_phi1_mac.yaml --force-mac
+```
+
+The current target model is `microsoft/phi-4` using Unsloth QLoRA. The JSONL
+format is also suitable for other SFT stacks that accept chat-template
+`messages` datasets. To train the Unsloth path on the synthetic export, update
+the config `dataset_path` to point at
+`../data/fireworks/virgil_fireworks_train.jsonl`.
+
+## Operations Notes
+
+### DLQ Replay
+
+Use the replay tool to inspect and safely requeue failed worker messages from
+`security_dlq`.
+
+```bash
+# Dry run, no writes
 python3 scripts/replay_dlq.py --limit 50
-```
 
-Execute replay writes:
-
-```bash
+# Requeue messages
 python3 scripts/replay_dlq.py --execute --limit 50
-```
 
-Execute + delete successfully replayed DLQ entries:
-
-```bash
+# Requeue and delete successfully replayed DLQ entries
 python3 scripts/replay_dlq.py --execute --delete-replayed --limit 50
 ```
 
 Useful flags:
 
-- `--from-id <stream-id>`: resume from a specific DLQ stream ID.
-- `--target-stream <name>`: force destination stream for all replays.
-- `--fallback-stream <name>`: destination if DLQ entry source stream is missing/invalid.
+- `--from-id <stream-id>` resumes from a specific DLQ stream ID.
+- `--target-stream <name>` forces the destination stream.
+- `--fallback-stream <name>` is used when the DLQ source stream is missing or
+  invalid.
 
-By default the tool reads `REDIS_URL`, `SECURITY_DLQ_STREAM`, and `SECURITY_EVENTS_STREAM` from environment.
+### Secrets
 
-## API endpoints
+Do not commit `.env`. It is gitignored and should contain local Postgres
+credentials, `DATABASE_URL`, `REDIS_URL`, and any API keys. `make bootstrap`
+refuses to write `.env` if git would track it, then creates it once from
+`.env.example` with a generated 256-bit local Postgres password. Existing
+`.env` files are never overwritten. Keep `.env.example` placeholder-only.
 
-- `GET /health`
-- `GET /ready`
-- `POST /api/v1/agents/checkin`
-- `GET /api/v1/agents/{agent_id}/status`
-- `GET /api/v1/alerts/recent?limit=20&offset=0`
-- `GET /api/v1/events/search?host_id=&event_type=&severity=&limit=50&offset=0`
+`DATABASE_URL` must match the Postgres credentials in `.env`. If the local
+Postgres volume was initialized with old credentials, rotate the password inside
+Postgres or reset the development volume with:
 
-Query endpoint notes:
+```bash
+docker compose down -v
+docker compose up --build -d
+```
 
-- `alerts/recent`: `limit` must be `1..100`, `offset` must be `0..10000`.
-- `events/search`: `limit` must be `1..250`, `offset` must be `0..10000`.
-- `events/search` `severity` filter must be one of: `low`, `medium`, `high`, `critical`.
-- Both endpoints now return a `pagination` block with `limit`, `offset`, `returned`, and `has_more`.
-- Invalid query params return `400` with `{ "error_code": "invalid_query", "message": "...", "details": { ... } }`.
+That reset is destructive and should only be used for local development data.
 
-## Renaming services
+## Roadmap
 
-1. In `docker-compose.yml`, change `container_name` and **service keys** (e.g. `go-api:` → `api:`).  
-2. Update **every** reference: `depends_on`, `environment`, and nginx `proxy_pass http://<service>:<port>/`.  
-3. Rebuild affected images: `docker compose up --build -d`.
+The next build order is deliberately backend-first:
 
-## Secrets and credentials
+1. **Transformer safety (`ART-14`)**
+   Harden checkpoint resume, idempotency, and partial batch failure behavior in
+   `python-worker/transform_job.py`.
+2. **CI baseline (`ART-15`)**
+   Add workflow gates for `make doctor`, `make test`, and compose smoke
+   verification.
+3. **Product surface expansion**
+   Build richer alert detail, investigation workflows, fleet inventory, and
+   model-assisted triage after the runtime baseline is safer.
+4. **VIRGIL-PHI1 growth**
+   Scale the corpus toward the 10M-token goal, improve eval coverage, train
+   adapters, and define the runtime integration boundary for Advisor inference.
 
-### Never commit `.env`
-
-- **`.env` is gitignored.** It is the local place for Postgres passwords, `DATABASE_URL`, and any API keys.  
-- **`.env.example`** is safe to commit: placeholders only. The default password there is **for local development only**; it is weak by design so you notice and replace it.
-
-### What `.gitignore` is meant to catch
-
-Besides `.env`, the repo ignores common leak paths: TLS private keys, `secrets/`, cloud credential JSON, `.pgpass`, Docker override files that often hold local paths, build artifacts, and editor noise. **Review before every push**; `.gitignore` is not a security product.
-
-### Local development vs GitHub
-
-- **Local:** copy `.env.example` → `.env`, iterate freely.  
-- **GitHub / CI:** inject secrets via your CI provider’s secret store or OIDC—**not** by committing `.env`. PR branches should never add real credentials to tracked files.
-
-### Rotating the Postgres password
-
-1. Change `POSTGRES_PASSWORD` in `.env`.  
-2. Update `DATABASE_URL` so the password in the URL matches **exactly** (URL-encode special characters if needed).  
-3. If Postgres already initialized the data volume with the old password, either rotate inside Postgres (`ALTER USER … PASSWORD`) or **reset the volume** (destructive):  
-   `docker compose down -v` then `docker compose up --build -d` (this wipes the named volume—only for dev).
-
-### `DATABASE_URL` must match `.env`
-
-`go-api` uses `DATABASE_URL` for `sql.Open`. `POSTGRES_*` variables configure the **postgres** container. If user/password/db do not align between those settings and `DATABASE_URL`, health checks will show `postgres: error`.
-
-### Production secret management (recommended vendor)
-
-For enterprise production workloads, use a dedicated secret manager with audit,
-rotation, and fine-grained access. VIRGIL does not integrate a secret manager
-yet; inject runtime secrets via your platform or CI/CD secret store instead of
-flat files in the image.
-
-## Makefile targets
-
-| Target | Purpose |
-|--------|---------|
-| `make bootstrap` | Ensure `.env` exists and verify local prerequisites (`docker`, `docker compose`, `make`). |
-| `make doctor` | Print local toolchain versions and whether `go` / `cargo` / `python3` / Docker are available. |
-| `make up` / `make down` | Start or stop the stack. |
-| `make logs` | Tail service logs. |
-| `make test` | Run Go, Rust, and Python tests on the **host**; missing toolchains are skipped with a notice. |
-| `make verify` | HTTP smoke test (uses `PYTHON`, default `python3`). |
-
-## Next build plan (current focus)
-
-Most initial Phase 2 milestones are now complete. Recommended next order:
-
-1. **Transformer safety (`ART-14`)**  
-   Add idempotency and checkpoint resume hardening tests in `python-worker/transform_job.py`.
-2. **CI baseline (`ART-15`)**  
-   Add workflow gates for `make doctor`, `make test`, and compose smoke verification.
-
-Detailed checklist and milestone state live in `docs/next-build-plan.md`.
+Detailed milestone tracking lives in `docs/next-build-plan.md`.
 
 ## License
 
