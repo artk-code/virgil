@@ -89,6 +89,14 @@ services:
       HOST_ID: ${HOST_ID:-local-dev-host}
       PIPELINE_RETRY_MAX: ${PIPELINE_RETRY_MAX:-3}
       PIPELINE_DEDUPE_TTL_SECONDS: ${PIPELINE_DEDUPE_TTL_SECONDS:-3600}
+      # LLM Harness (gbuild - Grok Build)
+      VIRGIL_LLM_PROVIDER: ${VIRGIL_LLM_PROVIDER:-langchain}
+      VIRGIL_LLM_MODEL: ${VIRGIL_LLM_MODEL:-anthropic:claude-sonnet-4-6}
+      VIRGIL_LLM_TEMPERATURE: ${VIRGIL_LLM_TEMPERATURE:-0.1}
+      VIRGIL_LLM_MAX_TOKENS: ${VIRGIL_LLM_MAX_TOKENS:-4096}
+      VIRGIL_LANGSMITH_TRACING: ${VIRGIL_LANGSMITH_TRACING:-false}
+    volumes:
+      - ./sdk:/app/sdk:ro
     depends_on:
       redis:
         condition: service_healthy

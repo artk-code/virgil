@@ -1,2 +1,9 @@
 redis==5.0.7
 psycopg[binary]==3.2.9
+
+# SDK / LLM Harness deps (gbuild - Grok Build)
+langchain>=0.3.0
+langgraph>=0.3.0
+langsmith>=0.1.0
+pydantic>=2.0
+python-dotenv

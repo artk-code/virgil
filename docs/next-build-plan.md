@@ -1,6 +1,27 @@
 # Next Build Plan
 
-This is the execution checklist for the next implementation wave after the initial scaffold and smoke validation.
+**Note (gbuild - Grok Build):** All new LLM Harness & Advisor work is happening exclusively on the `gbuild` branch. Core SDK structure + LangChain provider already implemented and pushed. Updates below reflect progress on gbuild only. Main branch untouched.
+
+## LLM Harness & Multi-Vendor Advisor Integration (gbuild only)
+
+- [x] Core `sdk/llm/` (types, config, middleware, harness, utils) + `sdk/providers/langchain/` (adapter, tools, prompts) pushed to gbuild.
+- [x] `sdk/requirements.txt` and basic structure added.
+- [ ] Update Makefile, docker-compose.yml, python-worker/requirements.txt on gbuild (in progress).
+- [ ] Add `db/migrations/` for advisor_calls / approvals tables.
+- [ ] Build `sdk/tests/` with pytest (use team experts for regression prevention vs VIRGIL pipeline).
+- [ ] Wire advisor calls optionally in python-worker/transform_job.py or worker.py.
+- [ ] Add Go API endpoint or FastAPI mount for /api/v1/advisor/query.
+- [ ] Update docs/ plan + this file as changes land on gbuild.
+- [ ] Full middleware stack (PII, retry, summarization, HITL, cost) + LangSmith toggle.
+- [ ] Support for Fireworks/local fine-tuned VIRGIL Advisor path.
+
+**Done when (gbuild)**
+
+- [ ] `make sdk-verify` passes cleanly on gbuild.
+- [ ] Harness can be called from python-worker without breaking existing event flow.
+- [ ] Docs (this file + VIRGIL_LLM_Harness_Build_Plan.md) stay in sync with every push.
+
+## Existing Milestones (unchanged, continue on gbuild where relevant)
 
 ## Milestone 1: API hardening and query controls
 
@@ -86,4 +107,9 @@ make doctor
 make test
 docker compose up --build -d
 make verify
+```
+
+**gbuild-specific kickoff (add this when working on LLM harness):**
+```bash
+make sdk-verify
 ```
