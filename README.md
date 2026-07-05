@@ -385,6 +385,24 @@ The next build order is deliberately backend-first:
 
 Detailed milestone tracking lives in `docs/next-build-plan.md`.
 
+## encinitas (Gemma 4 26B LoRA)
+
+Local inference for the **encinitas** adapter on [Gemma 4 26B A4B](https://huggingface.co/google/gemma-4-26B-A4B-it). Requires **48 GiB+ VRAM** (ROCm or CUDA).
+
+| Piece | Location |
+|-------|----------|
+| Docs + scripts | [`inference/encinitas/`](inference/encinitas/) |
+| LoRA weights | [`coldcurrent/encinitas-gemma4-lora`](https://huggingface.co/coldcurrent/encinitas-gemma4-lora) |
+
+```bash
+cd inference/encinitas
+cp encinitas.env.example encinitas.env   # add HF_TOKEN locally — never commit
+bash fix_encinitas_gfx1151_torch.sh      # AMD Strix Halo
+./run_encinitas_local.sh "Say hello."
+```
+
+Full setup: [`inference/encinitas/README.md`](inference/encinitas/README.md).
+
 ## License
 
 MIT License. See `LICENSE`.

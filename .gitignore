@@ -67,3 +67,11 @@ node_modules/
 *.log
 tmp/
 temp/
+
+# encinitas inference — never commit secrets or weight blobs
+inference/encinitas/encinitas.env
+inference/encinitas/encinitas-venv/
+inference/encinitas/encinitas-venv-gfx1151/
+inference/encinitas/encinitas-venv-cuda/
+inference/encinitas/weights/encinitas-peft/
+inference/encinitas/weights/encinitas-offload/
