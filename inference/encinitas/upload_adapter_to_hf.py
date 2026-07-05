@@ -25,30 +25,56 @@ tags:
   - moe
   - peft
   - encinitas
+  - cybersecurity
+  - virgil
 library_name: peft
 pipeline_tag: text-generation
 ---
 
 # encinitas-gemma4-lora
 
-LoRA adapter for **encinitas** on [Gemma 4 26B A4B](https://huggingface.co/google/gemma-4-26B-A4B-it).
+LoRA adapter for **encinitas** — a VIRGIL-style blue-team fine-tune on [Gemma 4 26B A4B](https://huggingface.co/google/gemma-4-26B-A4B-it).
 
-Uses Fireworks `fused_peft_3d_v1` MoE expert layout. Load with VIRGIL inference scripts:
+Trained for endpoint security investigation: MITRE ATT&CK mapping, Sigma rule analysis, malware behavior reasoning, and structured defender recommendations in the `<reasoning>...</reasoning><answer>{JSON}</answer>` contract.
+
+Uses Fireworks `fused_peft_3d_v1` MoE expert layout. **Stock PEFT cannot load this adapter alone** — use the VIRGIL inference scripts that merge fused expert LoRA:
 
 https://github.com/artk-code/virgil/tree/main/inference/encinitas
+
+## Quick start
 
 ```bash
 git clone https://github.com/artk-code/virgil.git
 cd virgil/inference/encinitas
-cp encinitas.env.example encinitas.env   # add HF_TOKEN locally
-bash fix_encinitas_gfx1151_torch.sh      # AMD Strix Halo
+cp encinitas.env.example encinitas.env   # add HF_TOKEN locally — never commit
+# Accept Gemma 4 license: https://huggingface.co/google/gemma-4-26B-A4B-it
+
+bash fix_encinitas_gfx1151_torch.sh      # AMD Strix Halo / gfx1151
+# bash setup_cuda_venv.sh                # NVIDIA 48GB+
+
 ./run_encinitas_local.sh "Your prompt"
 ```
 
 ## Requirements
 
-- 48 GiB+ VRAM (fp16) or low-memory mode
-- Accept [Gemma 4 license](https://huggingface.co/google/gemma-4-26B-A4B-it)
+- Base model: `google/gemma-4-26B-A4B-it` (~49 GB, gated)
+- 48 GiB+ VRAM (fp16); Strix Halo (~96 GiB unified) tested on ROCm
+- Hugging Face token with Gemma 4 license accepted
+
+## Evaluation (summary)
+
+Public OOD cyber eval (Meta CyberSecEval-inspired prompts). Full methodology:
+https://www.artkaiser.net/blog/encinitas-cheaper-better-cyber-inference
+
+| Model | TTP % | Actionable % | Format (0-4 avg) |
+|-------|-------|--------------|------------------|
+| Encinitas LoRA | 100% | 50% | 2.0 |
+| Gemma4-26b-a4b-it (base) | 100% | 67% | 3.0 |
+| Kimi k2p7-code | 100% | 100% | 1.3 |
+
+encinitas excels at **concise, parseable, contract-aligned** outputs for SOC and agent workflows.
+
+Training context (VIRGIL corpus): https://www.artkaiser.net/blog/custom-cybersecurity-models-fireworks
 
 ## License
 

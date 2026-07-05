@@ -385,23 +385,31 @@ The next build order is deliberately backend-first:
 
 Detailed milestone tracking lives in `docs/next-build-plan.md`.
 
-## encinitas (Gemma 4 26B LoRA)
+## encinitas (Gemma 4 26B MoE LoRA)
 
-Local inference for the **encinitas** adapter on [Gemma 4 26B A4B](https://huggingface.co/google/gemma-4-26B-A4B-it). Requires **48 GiB+ VRAM** (ROCm or CUDA).
+**encinitas** is a production-oriented LoRA on [Gemma 4 26B A4B](https://huggingface.co/google/gemma-4-26B-A4B-it) for VIRGIL-style blue-team reasoning: ATT&CK mapping, Sigma analysis, malware triage, and structured `<reasoning>` / `<answer>` JSON. Trained on ~36M tokens (~$380 SFT); public OOD evals show it matches or beats much larger models on **output discipline** and inference economics. Write-ups: [VIRGIL training](https://www.artkaiser.net/blog/custom-cybersecurity-models-fireworks) · [encinitas eval + cost](https://www.artkaiser.net/blog/encinitas-cheaper-better-cyber-inference).
 
 | Piece | Location |
 |-------|----------|
-| Docs + scripts | [`inference/encinitas/`](inference/encinitas/) |
-| LoRA weights | [`coldcurrent/encinitas-gemma4-lora`](https://huggingface.co/coldcurrent/encinitas-gemma4-lora) |
+| Docs + ROCm/CUDA scripts | [`inference/encinitas/`](inference/encinitas/) |
+| LoRA weights (~1 GB) | [`coldcurrent/encinitas-gemma4-lora`](https://huggingface.co/coldcurrent/encinitas-gemma4-lora) |
+| Base model (~49 GB, gated) | `google/gemma-4-26B-A4B-it` |
+
+Requires **48 GiB+ VRAM** (fp16). Strix Halo / gfx1151 (~96 GiB unified) is tested. GPU-only — no NPU hybrid path for this stack.
 
 ```bash
 cd inference/encinitas
-cp encinitas.env.example encinitas.env   # add HF_TOKEN locally — never commit
-bash fix_encinitas_gfx1151_torch.sh      # AMD Strix Halo
-./run_encinitas_local.sh "Say hello."
+cp encinitas.env.example encinitas.env   # HF_TOKEN locally — never commit
+# Accept Gemma 4 license on Hugging Face first
+
+bash fix_encinitas_gfx1151_torch.sh      # AMD Strix Halo / gfx1151 (recommended)
+# bash fix_encinitas_rocm_venv.sh        # other AMD ROCm
+# bash setup_cuda_venv.sh                # NVIDIA 48GB+
+
+./run_encinitas_local.sh "Investigate this endpoint alert..."
 ```
 
-Full setup: [`inference/encinitas/README.md`](inference/encinitas/README.md).
+Full setup, eval tables, troubleshooting, and production notes: [`inference/encinitas/README.md`](inference/encinitas/README.md).
 
 ## License
 
